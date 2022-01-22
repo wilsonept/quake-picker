@@ -1,4 +1,5 @@
 __pycache__
 %SystemDrive%
 .pyenv
-.env
+venv
+config.json
