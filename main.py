@@ -1,7 +1,9 @@
 from flask import Flask
-import db
+import database
+from json_reader import load_json
+from application import app
 
-app = Flask(__name__)
+
 
 @app.route("/")
 def home():
