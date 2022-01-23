@@ -105,6 +105,6 @@ def create_req(post_nickname,post_game_mode,post_bo_type,post_seed):
     db.session.add(new_room)
     db.session.commit()
 
-create_req("Pipiskin",1,1,1)
+#create_req("Pipiskin",1,1,1)
 
 
