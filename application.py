@@ -13,7 +13,7 @@ def create_app():
     
     # Подключение БД
     conf = load_json('config.json')
-    engine = f'postgresql://{{ conf["user"] }}:{{ conf["password"] }}@{{ conf["host"] }}:{{ conf["port"] }}/{{ conf["db_name"] }}'
+    engine = f'postgresql://{ conf["user"] }:{ conf["password"] }@{ conf["host"] }:{ conf["port"] }/{ conf["db_name"] }'
     app.config['SQLALCHEMY_DATABASE_URI'] = engine
     db = SQLAlchemy(app)
     return app
