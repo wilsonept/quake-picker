@@ -7,13 +7,13 @@
 * html
 * css
 * js
-* bootstrap
+* bootstrap5
 
 ### Backend
 * python
 * flask
+* flask-sqlalchemy
 * json-rpc
-* sqlalchemy
 * AWS EC2
 * debian
 * postgresql

@@ -1,0 +1,34 @@
+{% extends "bootstrap/base.html" %}
+
+{% block title %}Join room{% endblock %}
+
+{% block content %}
+
+    <main class="d-flex vh-100 w-auto justify-content-center align-items-center bg-dark">
+        <form class="form__custom d-flex flex-column border rounded-3 px-5 pb-3" method="POST" action="{{ url_for('join') }}" novalidate>
+
+            {{ form.csrf_token }}
+
+            <!-- заголовок формы -->
+            <h1 class="mt-5 text-light">Join match</h1>
+
+            <!-- поля формы с обработкой ошибок -->
+            <label class="my-2 text-light form-label">{{ form.nickname.label }}</label>
+            {% if not "nickname" in errors %}
+                {{ form.nickname(class_="form-control") }}
+            {% else %}
+                {{ form.nickname(class_="form-control border border-danger border-2") }}
+                <p class="text-danger">{{ errors["nickname"][0] }}</p>
+            {% endif %}
+            
+            <div class="d-flex justify-content-between">
+                <!-- кнопка подключения в режиме наблюдателя -->
+                <a class="btn btn-secondary my-5 form-control" href="#">Spectator</a>
+
+                <!-- кнопка подтверждения формы -->
+                {{ form.submit(class_="ms-2 my-5 form-control btn-primary") }}
+            <div>
+        </form>
+    </main>
+
+{% endblock %}

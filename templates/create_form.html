@@ -1,0 +1,62 @@
+{% extends "bootstrap/base.html" %}
+
+{% block title %}Create room{% endblock %}
+
+{% block content %}
+
+    <main class="d-flex vh-100 w-auto justify-content-center align-items-center bg-dark">
+        <form class="form__custom d-flex flex-column border rounded-3 px-5 pb-3" method="POST" action="{{ url_for('create') }}" novalidate>
+
+            {{ form.csrf_token }}
+
+            <!-- заголовок формы -->
+            <h1 class="mt-5 text-light">Create match</h1>
+            
+            <!-- поля формы с обработкой ошибок -->
+            <label class="my-2 text-light form-label">{{ form.game_mode.label }}</label>
+            {% if not "game_mode" in errors %}
+                {{ form.game_mode(class_="form-select") }}
+            {% else %}
+                {{ form.game_mode(class_="form-select border border-danger border-2") }}
+                {% for error in errors["game_mode"] %}
+                    <p class="text-danger">{{ errors["game_mode"][0] }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <label class="my-2 text-light form-label">{{ form.bo_type.label }}</label>
+            {% if not "bo_type" in errors %}
+                {{ form.bo_type(class_="form-select") }}
+            {% else %}
+                {{ form.bo_type(class_="form-select border border-danger border-2") }}
+                {% for error in errors["bo_type"] %}
+                    <p class="text-danger">{{ errors["bo_type"][0] }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <label class="my-2 text-light form-label">{{ form.nickname.label }}</label>
+                {% if not "nickname" in errors %}
+                    {{ form.nickname(class_="form-control") }}
+                {% else %}
+                    {{ form.nickname(class_="form-control border border-danger border-2") }}
+                    {% for error in errors["nickname"] %}
+                        <p class="text-danger">{{ errors["nickname"][0] }}</p>
+                    {% endfor %}
+                {% endif %}
+
+            <label class="my-2 text-light form-label">{{ form.seed.label }}</label>
+            {% if not "seed" in errors %}
+                {{ form.seed(class_="form-select") }}
+            {% else %}
+                {{ form.seed(class_="form-select border border-danger border-2") }}
+                {% for error in errors["seed"] %}
+                    <p class="text-danger">{{ errors["seed"][0] }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <!-- кнопка подтверждения формы -->
+            {{ form.submit(class_="my-5 form-control btn-primary") }}
+
+        </form>
+    </main>
+
+{% endblock %}
