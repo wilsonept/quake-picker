@@ -33,9 +33,12 @@ def join(room_id):
     ''' Форма подключения к комнате '''
     form = JoinForm()
     if form.validate_on_submit():
-        return redirect(url_for('room.html', room_id=room_id))
+
+        # TODO проверка существования комнаты
+
+        return redirect(url_for('room', room_id=room_id))
     else:
-        return render_template('join_form.html', form=form, errors=form.errors)
+        return render_template('join_form.html', form=form, errors=form.errors, room_id=room_id)
 
 
 @app.route("/<room_id>/room", methods=['GET', 'POST'])
@@ -55,4 +58,4 @@ def results(room_id):
 # Запуск приложения
 # ------------------------------------
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000)

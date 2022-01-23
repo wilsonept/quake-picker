@@ -15,6 +15,7 @@ def create_app():
     conf = load_json('config.json')
     engine = f'postgresql://{ conf["user"] }:{ conf["password"] }@{ conf["host"] }:{ conf["port"] }/{ conf["db_name"] }'
     app.config['SQLALCHEMY_DATABASE_URI'] = engine
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # отключает FSADeprecationWarning при старте приложения.
     db = SQLAlchemy(app)
     return app
 

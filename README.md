@@ -17,6 +17,7 @@
 * AWS EC2
 * debian
 * postgresql
+* nginx
 
 ## Описание
 * quakePicker.drawio - Предварительная архитектура баз данных
