@@ -1,5 +1,519 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+
+:root {
+    font-size: 1rem;
+    --clr-bg: rgb(28, 22, 29);
+    --grd-gold: linear-gradient(-45deg, #EB6E2F 40%, #F9BA2F 60%, #EB6E2F);
+    --grd-light: linear-gradient(to bottom, transparent 0%, #FD4023 30% 70%, transparent 100%);
+    --champ-height: 150px;
+    --champ-width: 100px;
+    --border-thin: 1px;
+    --border-thick: 3px;
+    --map-height: 8rem;
+    --map-width: 12rem;
+}
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    background: var(--clr-bg);
+}
+
+.container {
+    position: relative;
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    margin: auto;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.container::before,
+.container::after {
+    position: absolute;
+    white-space: pre;
+    font-size: 14rem;
+    line-height: 11.5rem;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: translateX(20%);
+    animation: 60s linear 0s infinite alternate move-bg-text;
+}
+
+/* TODO необходимо менять content в зависимости от этапа выбора силами JS */
+.container::before {
+    content: 'PICKING \A     RESULTS';
+    color: rgba(81, 75, 80, .2);
+    z-index: -99;
+}
+
+/* TODO необходимо менять content в зависимости от этапа выбора силами JS */
+.container::after {
+    content: 'PICKING \A     RESULTS \A    PICKING RESULTS \A  PICKING RESULTS \A PICKING RESULTS';
+    color: rgb(28, 22, 29);
+    text-shadow: -1px -1px 0 rgba(81, 75, 80, .2), 1px -1px 0 rgba(81, 75, 80, .2), -1px 1px 0 rgba(81, 75, 80, .2), 1px 1px 0 rgba(81, 75, 80, .2);
+    z-index: -100;
+}
+
+/* ----------------- Чемпионы и Карты -----------------*/
+
+/* TODO данный блок должен изменяться в зависимости от этапа выбора силами JS */
+.choice-wrapper {
+    display: grid;
+    /* display: flex; строка отображения результатов */
+    /* flex-direction: column; строка отображения результатов */
+    grid-template-columns: 1fr 1fr 1fr;
+    /* grid-template-columns: 1fr 1fr 1fr 1fr; Строка для выбора чемпионов */
+    justify-content: center;
+}
+
+.choice-wrapper :nth-child(1).map-result-card,
+.choice-wrapper :nth-child(3).map-result-card,
+.choice-wrapper :nth-child(5).map-result-card,
+.player-card.blue {
+    animation: slidein_left 2s ease-out 0s 1 normal forwards;
+}
+
+.choice-wrapper :nth-child(2).map-result-card,
+.choice-wrapper :nth-child(4).map-result-card,
+.player-card.red {
+    animation: slidein_right 2s ease-out 0s 1 normal forwards;
+}
+
+.choice-wrapper :nth-child(1).map-result-card {
+    animation-delay: .2s;
+}
+
+.choice-wrapper :nth-child(2).map-result-card {
+    animation-delay: .4s;
+}
+
+.choice-wrapper :nth-child(3).map-result-card {
+    animation-delay: .6s;
+}
+
+.choice-wrapper :nth-child(4).map-result-card {
+    animation-delay: .8s;
+}
+
+.choice-wrapper :nth-child(5).map-result-card {
+    animation-delay: 1s;
+}
+
+/*  основной блок карточки, необходим для того 
+что бы корректно позиционировать в нем absolute блоки.
+Фиксированный размер нужен что бы при изменении размеров
+внутренних блоков не сдвигались соседи.*/
+.card {
+    margin: 10px;
+    position: relative;
+}
+
+.card-champ {
+    height: var(--champ-height);
+    width: calc(var(--champ-width) + var(--border-thick) * 2);
+}
+
+.card-map {
+    height: var(--map-height);
+    width: calc(var(--map-width) + var(--border-thick) * 2);
+}
+
+/* данный блок делает основную магию, он выступает 
+  в качестве обертки изображения со слегка большим
+  размером чем у вложенного изображения.
+  Благодаря этому мы имитируем рамку вокруг картинки. */
+.card-image-wrapper {
+    margin: auto;
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    transition: all .1s ease;
+    overflow: hidden;
+}
+
+.card-champ .card-image-wrapper {
+    height: var(--champ-height);
+    width: var(--champ-width);
+}
+
+.card-map .card-image-wrapper {
+    height: var(--map-height);
+    width: var(--map-width);
+}
+
+/* блок изображения */
+.card-image {
+    position: absolute;
+    object-fit: cover;
+    z-index: 10;
+}
+
+.card-champ .card-image {
+    height: calc(var(--champ-height) - var(--border-thin) * 2);
+    width: calc(var(--champ-width) - var(--border-thin) * 2);
+}
+
+.card-map .card-image {
+    height: calc(var(--map-height) - var(--border-thin) * 2);
+    width: calc(var(--map-width) - var(--border-thin) * 2);
+}
+
+/* блок для назначения цвета нашей имитированной рамки 
+  вокруг изображения. Он сделан значительно больше
+  основного блока что бы при анимировании вращения
+  он полностью покрывал карточку */
+.card-image-wrapper::before {
+    position: absolute;
+    content: "";
+    top: -40%;
+    left: -70%;
+    right: -70%;
+    bottom: -40%;
+    transition: all .1s ease;
+    background: #555;
+}
+
+/* блок внутреннего свечения рамки,
+  активируется в активных состояниях */
+.card-image-wrapper::after {
+    position: absolute;
+    content: "";
+    top: var(--border-thick);
+    left: var(--border-thick);
+    right: var(--border-thick);
+    bottom: var(--border-thick);
+    transition: all .1s ease;
+    box-shadow: inset 0 0 10px #EB6E2F;
+    opacity: 0;
+    z-index: 100;
+}
+
+/* блок света позади карточки,
+  активируется в активных состояниях */
+.card-outer-light {
+    position: absolute;
+    pointer-events: none;
+    top: -30px;
+    width: 100%;
+    bottom: -30px;
+    background: var(--grd-light);
+    opacity: 0;
+    z-index: -1;
+}
+
+
+/* ------------------------------- */
+/* состояния наведения мышью */
+.card-image-wrapper:hover::before {
+    background: white;
+}
+
+/* при наведении на карточку, увеличить только обертку и ее содержимое.
+  нужно что бы свет на заднем плане не изменял своего размера.*/
+.card:hover .card-image-wrapper {
+    transform: scale(1.2);
+    z-index: 100;
+}
+
+.card:hover.card-champ .card-image-wrapper {
+    height: calc(var(--champ-height) + var(--border-thick) * 2);
+    width: calc(var(--champ-width) + var(--border-thick) * 2);
+}
+
+.card:hover.map-champ .card-image-wrapper {
+    height: calc(var(--map-height) + var(--border-thick) * 2);
+    width: calc(var(--map-width) + var(--border-thick) * 2);
+}
+
+/* ------------------------------- */
+/* активные состояния */
+/* меняем цвет рамки на активный и включаем анимацию */
+.card-image-wrapper:focus::before,
+.card-image-wrapper:active::before {
+    background: var(--grd-gold);
+    box-shadow: 0 0 10px #EB6E2F;
+    animation: border-highlight 2s linear infinite;
+}
+
+/* включаем внутреннее свечение */
+.card-image-wrapper:focus::after,
+.card-image-wrapper:active::after {
+    opacity: 1;
+}
+
+/* включаем свет позади карточки */
+.card-image-wrapper:focus~.card-outer-light,
+.card-image-wrapper:active~.card-outer-light {
+    opacity: 1;
+}
+
+/* ------------------------------- */
+/* состояния когда карточка выбрана и активна */
+/* увеличиваем рамку и включаем анимацию свечения рамки */
+.card-active {
+    animation: outer-glow 2s ease-in-out infinite;
+}
+
+.card-champ .card-active {
+    height: calc(var(--champ-height) + var(--border-thick) * 2);
+    width: calc(var(--champ-width) + var(--border-thick) * 2);
+}
+
+.card-map .card-active {
+    height: calc(var(--map-height) + var(--border-thick) * 2);
+    width: calc(var(--map-width) + var(--border-thick) * 2);
+}
+
+/* включаем анимацию света позади карточки */
+.card-active~.card-outer-light {
+    animation: outer-light 2s ease-out infinite;
+}
+
+/* включаем внутреннее свечение */
+.card-active::after {
+    opacity: 1;
+}
+
+/* красим рамку в активный цвет и включаем анимацию рамки */
+.card-active::before {
+    background: var(--grd-gold);
+    animation: border-highlight 3s ease-in-out infinite;
+}
+
+/* увеличиваем активную карточку при наведении не меняя цвета на белый */
+.card:hover .card-active::before {
+    pointer-events: none;
+    background: var(--grd-gold);
+}
+
+.invisible {
+    visibility: hidden;
+}
+
+/* ----------------- Игроки -----------------*/
+.player-card {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    height: 100vh;
+}
+
+.player-photo {
+    margin: auto;
+    height: 400px;
+    width: 330px;
+}
+
+.player-photo img {
+    object-position: bottom;
+    object-fit: contain;
+    height: 100%;
+    width: 100%;
+}
+
+.player-info {
+    margin-top: 1rem;
+}
+
+.player-info h1 {
+    display: inline-block;
+    line-height: 4rem;
+    font-size: 4rem;
+    font-weight: 800;
+}
+
+.player-info h2 {
+    display: inline-block;
+    font-size: 2rem;
+    line-height: 2rem;
+    font-weight: 300;
+}
+
+.team-logo {
+    height: 3rem;
+    width: 3rem;
+}
+
+.country-flag {
+    height: 1.5rem;
+    width: 2rem;
+    border-radius: .4rem;
+}
+
+.red * {
+    text-align: right;
+}
+
+
+/* ----------------- Результаты -----------------*/
+.choice-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    justify-content: center;
+}
+
+.map-result-card {
+    position: relative;
+    margin: 7px auto;
+    display: flex;
+    height: 144px;
+    width: 550px;
+    opacity: 0;
+    animation-fill-mode: forwards;
+}
+
+.map-result-card::before {
+    position: absolute;
+    content: "";
+    top: 5px;
+    left: 15%;
+    height: 144px;
+    width: 70%;
+    box-shadow: 0px 10px 8px rgba(0, 0, 0, .6);
+    transform: scale(.9);
+    z-index: -300;
+}
+
+.champ {
+    position: relative;
+    width: 144px;
+    height: 144px;
+}
+
+.champ::before {
+    position: absolute;
+    content: "";
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 4px rgb(49, 239, 213);
+    z-index: -10;
+}
+
+.champ::after {
+    position: absolute;
+    content: "";
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    border-radius: 50%;
+    box-shadow:
+        inset 0 0 14px rgb(49, 239, 213),
+        0 0 4px rgb(49, 239, 213);
+    z-index: -10;
+    animation: 3s glowing infinite;
+}
+
+.champ img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.map {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    height: 144px;
+    width: 260px;
+}
+
+.map h1 {
+    position: absolute;
+    letter-spacing: -2px;
+    white-space: nowrap;
+    color: white;
+    font-weight: 600;
+}
+
+.map::before {
+    position: absolute;
+    content: "";
+    top: 0;
+    left: -100px;
+    right: -100px;
+    bottom: 0px;
+    background: linear-gradient(to right, transparent 0%, black 10% 90%, transparent 100%);
+    z-index: -20;
+}
+
+.map img {
+    display: block;
+    margin: auto;
+    height: 100%;
+}
+
+
+/* ----------------- Анимации -----------------*/
+
+@keyframes border-highlight {
+    from {transform: none;}
+    to {transform: rotate(360deg);}
+}
+
+@keyframes outer-glow {
+    0% {box-shadow: 0 0 10px #EB6E2F;}
+    50% {box-shadow: 0 0 12px #EB6E2F;}
+    100% {box-shadow: 0 0 10px #EB6E2F;}
+}
+
+@keyframes outer-light {
+    0% {opacity: 1;}
+    50% {opacity: 0.6;}
+    100% {opacity: 1;}
+}
+
+@keyframes move-bg-text {
+    from {transform: translateX(20%);}
+    to {transform: translateX(0);}
+}
+
+@keyframes slidein_left {
+    0% {opacity: 0;
+        transform: translateX(-100%);}
+    40% {opacity: 0;}
+    100% {opacity: 1;
+        transform: translateX(0);}
+}
+
+@keyframes slidein_right {
+    0% {opacity: 0;
+        transform: translateX(100%);}
+    40% {opacity: 0;}
+    100% {opacity: 1;
+        transform: translateX(0);}}
+
+@keyframes glowing {
+    0% {opacity: .5;}
+    40% {opacity: 1;}
+    100% {opacity: .5;}
+}
+
+
+/* ----------------- дополнение к bootstrap -----------------*/
+
 .form__custom {
     min-width: 400px;
     max-height: 600px;
 }
-

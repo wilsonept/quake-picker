@@ -84,6 +84,6 @@ class Teams(db.Model):
 #for r in req:
 #    print(r)
 
-users_list = Objects.query.all()
-for r in users_list:
-    print(r.rel_current_season)
+# users_list = Objects.query.all()
+# for r in users_list:
+#     print(r.rel_current_season)

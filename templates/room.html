@@ -1,1 +1,62 @@
-this is the room
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Bootstrap CSS -->
+        {# <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous"> #}
+        
+        <!-- custom CSS -->
+        <link href="/static/css/style.css" rel="stylesheet">
+        
+        <!-- custom Head -->
+        {% block head %}{% endblock %}
+        
+        <title>{% block title %}{% endblock %}</title>
+        
+        </head>
+    <body>
+        <div class="container">
+        <!--   player one -->
+        <div class="player-card blue">
+            <div class="player-card-wrapper">
+                <div class="player-photo">
+                    <img src='https://pngimg.com/uploads/thief/thief_PNG36.png' width="100%">
+                </div>
+                <div class="player-info">
+                    <div class="country-wrapper">
+                        <h2>RUSSIA </h2>
+                        <img class="country-flag" src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Flag_of_Russia.png">
+                    </div>
+                    <img class="team-logo" src="../static/images/python_logo.png" width="100%">
+                    <h1>WILSON</h1>
+                </div>
+            </div>
+        </div>
+        <!--   champs and maps -->
+            <div class="choice-wrapper">
+                {% block content %}{% endblock %}
+            </div>
+        <!--   player two -->
+        <div class="player-card red">
+            <div class="player-card-wrapper">
+                <div class="player-photo">
+                    <img src='https://pngimg.com/uploads/hacker/hacker_PNG29.png' width="100%">
+                </div>
+                <div class="player-info">
+                    <div class="country-wrapper">
+                        <h2>UKRAINE </h2>
+                        <img class="country-flag" src="https://upload.wikimedia.org/wikipedia/commons/d/d2/Flag_of_Ukraine.png">
+                    </div>
+                    <div>
+                        <img class="team-logo" src="../static/images/python_logo.png" width="100%">
+                        <h1>LORD</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="/static/js/main.js" rel="stylesheet"></script>
+    </body>
+</html>

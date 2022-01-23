@@ -19,10 +19,14 @@ def create():
     form = CreateForm()
     if form.validate_on_submit():
 
-        ''' блок обработки удачного создания комнаты
+        ''' TODO блок обработки удачного создания комнаты
         на этом этапе необходимо создать комнату в базе и
         получить id комнаты для передачи его в redirect
         '''
+        # TODO Проверка наличия пользователя, если нет то создать пользователя
+        # TODO Создать комнату и привязать пользователя
+        # TODO Создать результат
+
         room_id = 123434244142342
         return redirect(url_for('room', room_id=room_id))
     return render_template('create_form.html', form=form, errors=form.errors)
@@ -44,7 +48,7 @@ def join(room_id):
 @app.route("/<room_id>/room", methods=['GET', 'POST'])
 def room(room_id):
     ''' Основная страница выбора, она же комната '''
-    return render_template('room.html', room_id=room_id)
+    return render_template('results.html', room_id=room_id)
 
 
 @app.route("/<room_id>/results")
@@ -58,4 +62,4 @@ def results(room_id):
 # Запуск приложения
 # ------------------------------------
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000)
+    app.run(host='127.0.0.1', port=5000, debug=True)
