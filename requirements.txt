@@ -10,7 +10,6 @@ itsdangerous==2.0.1
 Jinja2==3.0.3
 MarkupSafe==2.0.1
 mypy-extensions==0.4.3
-pip==21.3.1
 setuptools==59.2.0
 SQLAlchemy==1.4.29
 flask_sqlalchemy==2.5.1
