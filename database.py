@@ -84,24 +84,63 @@ class Teams(db.Model):
 #for r in req:
 #    print(r)
 
-def create_req(post_nickname,post_game_mode,post_bo_type,post_seed):
-    #users_list = Objects.query.all()
-    #for r in users_list:
-    #    print(r.rel_current_season)
-    ex_user = bool(Users.query.filter_by(nickname=post_nickname).first())
 
-    if ex_user == False:
-        new_user = Users(
-            nickname = post_nickname
-        )
+
+
+# NOTE на данную функцию имеется unittest.
+def create_room(nickname, game_mode, bo_type, seed):
+    ''' Создает пользователя если необходимо, создает комнату
+    и результат для пользователя создавшего комнату'''
+    # Проверяем пользователя в базе
+    is_exist = bool(Users.query.filter_by(nickname=nickname).first())
+
+    if is_exist == False:
+        # Создаем пользователя
+        new_user = Users(nickname=nickname)
         db.session.add(new_user)
-        db.session.commit()
+
+    # Создаем комнату
     new_room = Rooms(
-        game_mode_id = post_game_mode,
-        bo_type_id = post_bo_type,
-        seed = post_seed
+        game_mode_id = game_mode,
+        bo_type_id = bo_type,
+        seed = seed
     )
     db.session.add(new_room)
     db.session.commit()
+    
+    # Создаем результат
+    new_results = Results(
+        room_id = new_room.id,
+        user_id = new_user.id,
+        team_id = seed + 1 # id команд начинаются с 1, а seed с нуля. Поэтому нужно инкрементировать.
+    )
 
-#create_req("Pipiskin",1,1,1)
+    db.session.add(new_results)
+    db.session.commit()
+
+    # возвращаем id'шники созданных вхождений
+    operation_result = {
+        "room_id": new_room.id,
+        "user_id": new_user.id,
+        "results_id": new_results.id
+    }
+    return operation_result
+
+# NOTE на данную функцию имеется unittest.
+def delete_room(room_id, user_id, results_id):
+    ''' Удаляет пользователя, комнату и результат по заданным id таблиц'''
+    # получаем вхождения который надо удалить
+    entries_to_delete = [
+        Rooms.query.filter_by(id=room_id).first(),
+        Users.query.filter_by(id=user_id).first(),
+        Results.query.filter_by(id=results_id).first(),
+    ]
+    # удаляем
+    for entry in entries_to_delete:
+        try:
+            db.session.delete(entry)
+        except:
+            return False
+
+    db.session.commit()
+    return True

@@ -1,5 +1,4 @@
 from flask import render_template, url_for, redirect
-import database
 from application import app
 from forms import CreateForm, JoinForm
 
