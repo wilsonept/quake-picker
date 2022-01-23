@@ -1,4 +1,5 @@
 #from flask_sqlalchemy.ext.declarative import declarative_base
+from email.policy import default
 from application import db
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import text as sa_text
@@ -8,7 +9,7 @@ from sqlalchemy import text as sa_text
 class Users(db.Model):
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
     nickname = db.Column(db.String(40), nullable=False)
-    is_persistent = db.Column(db.Boolean, nullable=False)
+    is_persistent = db.Column(db.Boolean, nullable=False, default=False)
     rel_results = db.relationship("Results", back_populates="rel_users")
 
 class Actions(db.Model):
@@ -68,7 +69,7 @@ class Rooms(db.Model):
     game_mode_id = db.Column(db.Integer,db.ForeignKey('game_modes.id'), nullable=False)
     bo_type_id = db.Column(db.Integer,db.ForeignKey('bo_types.id'), nullable=False)
     seed = db.Column(db.Integer, nullable=False)
-    current_action_id = db.Column(db.Integer, db.ForeignKey('actions.id') ,nullable=False)
+    current_action_id = db.Column(db.Integer, db.ForeignKey('actions.id') ,nullable=False, default = 4)
     rel_results = db.relationship("Results", back_populates="rel_rooms")
     rel_game_modes = db.relationship("Game_modes", back_populates="rel_rooms")
     rel_bo_types = db.relationship("Bo_types", back_populates="rel_rooms")
@@ -84,6 +85,26 @@ class Teams(db.Model):
 #for r in req:
 #    print(r)
 
-users_list = Objects.query.all()
-for r in users_list:
-    print(r.rel_current_season)
+def create_req(post_nickname,post_game_mode,post_bo_type,post_seed):
+    #users_list = Objects.query.all()
+    #for r in users_list:
+    #    print(r.rel_current_season)
+    ex_user = bool(Users.query.filter_by(nickname=post_nickname).first())
+
+    if ex_user == False:
+        new_user = Users(
+            nickname = post_nickname
+        )
+        db.session.add(new_user)
+        db.session.commit()
+    new_room = Rooms(
+        game_mode_id = post_game_mode,
+        bo_type_id = post_bo_type,
+        seed = post_seed
+    )
+    db.session.add(new_room)
+    db.session.commit()
+
+create_req("Pipiskin",1,1,1)
+
+
