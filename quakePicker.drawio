@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e" pages="6">
     <diagram id="msKyM3QTYCGkHJKbw-Ij" name="DB_Arch">
-        <mxGraphModel dx="1169" dy="1361" grid="1" gridSize="10" guides="0" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+        <mxGraphModel dx="539" dy="1744" grid="1" gridSize="10" guides="0" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -24,13 +24,13 @@
                 <mxCell id="SCHBTk89pM5uPsMTtURv-54" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;startFill=0;endArrow=doubleBlock;endFill=0;" parent="1" source="4jjwoe7JuIm5MmQz-8s8-13" target="SCHBTk89pM5uPsMTtURv-42" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="240" y="280"/>
+                            <mxPoint x="240" y="240"/>
                             <mxPoint x="240" y="340"/>
                         </Array>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="4jjwoe7JuIm5MmQz-8s8-13" value="Game_Mode" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4D4D4D;fontStyle=1" parent="1" vertex="1">
-                    <mxGeometry x="40" y="250.2" width="170" height="60" as="geometry"/>
+                    <mxGeometry x="40" y="210" width="170" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="4jjwoe7JuIm5MmQz-8s8-16" value="name: str" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="40" y="520.2" width="170" height="30" as="geometry"/>
@@ -48,10 +48,10 @@
                     <mxGeometry x="40" y="410.2000000000001" width="170" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="4jjwoe7JuIm5MmQz-8s8-23" value="(PK) id: int" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF66FF;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="320.2" width="170" height="30" as="geometry"/>
+                    <mxGeometry x="40" y="280" width="170" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="4jjwoe7JuIm5MmQz-8s8-24" value="name: str" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="360.2" width="170" height="30" as="geometry"/>
+                    <mxGeometry x="40" y="320" width="170" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="4jjwoe7JuIm5MmQz-8s8-25" value="(PK) id: int" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF66FF;" parent="1" vertex="1">
                     <mxGeometry x="40" y="480.19999999999993" width="170" height="30" as="geometry"/>
@@ -315,6 +315,9 @@
                 </mxCell>
                 <mxCell id="iZ-Pagh186xZD2X_np8o-1" value="add end action" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="460" y="600" width="120" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="player_count: int" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="360" width="170" height="30" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

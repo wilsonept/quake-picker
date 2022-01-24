@@ -34,19 +34,22 @@ class FunctionCreateRoom(unittest.TestCase):
         "seed": 1
     }
 
-    def test_create_room(self, u=user):
-        global entries
-        entries = create_room(u['nickname'], u['game_mode'], u['bo_type'], u['seed'])
-        if 'room_id' in entries and 'user_id' in entries and 'results_id' in entries and len(entries.keys()) == 3:
-            result = True
-        else:
-            result = False
-        self.assertEqual(result, True)
+    # def test_create_room(self, u=user):
+    #     global entries
+    #     entries = create_room(u['nickname'], u['game_mode'], u['bo_type'], u['seed'])
+    #     if 'room_id' in entries and 'user_id' in entries and 'results_id' in entries and len(entries.keys()) == 3:
+    #         result = True
+    #     else:
+    #         result = False
+    #     self.assertEqual(result, True)
 
-    def test_delete_room(self):
-        result = delete_room(entries['room_id'], entries['user_id'], entries['results_id'])
-        self.assertEqual(result, True)
+    # def test_delete_room(self):
+    #     result = delete_room(entries['room_id'], entries['user_id'], entries['results_id'])
+    #     self.assertEqual(result, True)
         
+    # def test_join_room(self):
+    #     pass
+
 
 if __name__ == '__main__':
     unittest.main()

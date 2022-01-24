@@ -37,6 +37,7 @@ class Current_season(db.Model):
 class Game_modes(db.Model):
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
+    player_count = db.Column(db.Integer, nullable=False, unique=False)
 
     rel_rooms = db.relationship("Rooms", back_populates="rel_game_modes")
 
@@ -104,7 +105,6 @@ class Teams(db.Model):
 
 
 
-# NOTE на данную функцию имеется unittest.
 def create_room(nickname, game_mode, bo_type, seed):
     ''' Создает пользователя если необходимо, создает комнату
     и результат для пользователя создавшего комнату'''
@@ -115,6 +115,8 @@ def create_room(nickname, game_mode, bo_type, seed):
         # Создаем пользователя
         new_user = Users(nickname=nickname)
         db.session.add(new_user)
+    else:
+        new_user = Users.query.filter_by(nickname=nickname).first()
 
     # Создаем комнату
     new_room = Rooms(
@@ -151,24 +153,32 @@ def join_room(post_nickname, post_room_uuid):
     room_exist = bool(Rooms.query.filter_by(room_uuid=post_room_uuid).first())
     
     if room_exist == False:
-        
-        # TODO Пользователю нужно вернуть страницу с инфой о том что такой румы нет
-        return True
-    
+        # TODO логики с True, False недостаточно, проработать решение.
+        return False
+
     # Проверяем пользователя в базе
     user_exist = bool(Users.query.filter_by(nickname=post_nickname).first())
 
     if user_exist == False:
+        
+    # TODO Проверяем заполнена ли комната
+    # NOTE Если заполнена пользователь должен получить сообщение об этом
+    # либо должен быть перенаправлен в наблюдателей
+    # поэтому логика с True, False для этой функции не годится.
+
     # Создаем пользователя
         new_user = Users(nickname=post_nickname)
         db.session.add(new_user)
         db.session.commit()
+    else:
+        new_user = Users.query.filter_by(nickname=post_nickname).first()
 
+    
     # Создаем результат
-    # TODO проверить зовется ли room.id через room
     room = Rooms.query.filter_by(room_uuid=post_room_uuid).first()
+
     new_results = Results(
-        room_id = room.id,
+        room_id = room.id, # NOTE Проверено - работает. Коммент после прочтения сжечь)
         user_id = new_user.id,
         # TODO нужна логика определения сида для остальных участников
         #team_id = seed + 1 # id команд начинаются с 1, а seed с нуля. Поэтому нужно инкрементировать.
@@ -178,7 +188,6 @@ def join_room(post_nickname, post_room_uuid):
     db.session.commit()
 
 
-# NOTE на данную функцию имеется unittest.
 def delete_room(room_id, user_id, results_id):
     ''' Удаляет пользователя, комнату и результат по заданным id таблиц'''
     # получаем вхождения который надо удалить
