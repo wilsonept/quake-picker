@@ -1,6 +1,7 @@
 from flask import render_template, url_for, redirect
 from application import app
 from forms import CreateForm, JoinForm
+from database import create_room
 
 
 
@@ -20,11 +21,13 @@ def create():
 
         ''' TODO блок обработки удачного создания комнаты
         на этом этапе необходимо создать комнату в базе и
-        получить id комнаты для передачи его в redirect
+        получить uuid комнаты для передачи его в redirect
         '''
         # TODO Проверка наличия пользователя, если нет то создать пользователя
         # TODO Создать комнату и привязать пользователя
         # TODO Создать результат
+ 
+        #_, room_uuid = create_room(nickname, game_mode, bo_type, seed)
 
         room_id = 123434244142342
         return redirect(url_for('room', room_id=room_id))
