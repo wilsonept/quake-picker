@@ -1,10 +1,13 @@
 #from flask_sqlalchemy.ext.declarative import declarative_base
+from random import choice
 from application import db
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import text as sa_text
 
 
-
+# ------------------------------------
+# Модели
+# ------------------------------------
 class Users(db.Model):
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
     nickname = db.Column(db.String(40), nullable=False)
@@ -98,16 +101,13 @@ class Teams(db.Model):
 
     rel_results = db.relationship("Results", back_populates="rel_teams")
 
-#req = engine.execute("select * from users")
-#for r in req:
-#    print(r)
 
-
-
-
-def create_room(nickname, game_mode, bo_type, seed):
-    ''' Создает пользователя если необходимо, создает комнату
-    и результат для пользователя создавшего комнату'''
+# ------------------------------------
+# Функции основные
+# ------------------------------------
+def create_user(nickname) -> int:
+    '''Создает пользователя в таблице users если необходимо и
+    возвращает id пользователя.'''
     # Проверяем пользователя в базе
     user_exist = bool(Users.query.filter_by(nickname=nickname).first())
 
@@ -115,79 +115,122 @@ def create_room(nickname, game_mode, bo_type, seed):
         # Создаем пользователя
         new_user = Users(nickname=nickname)
         db.session.add(new_user)
+        ''' TODO добавить обработку ошибок на случай:
+            * если запрос не дошел до базы
+            * если ответ не пришел от базы'''
+        db.session.commit(new_user)
     else:
         new_user = Users.query.filter_by(nickname=nickname).first()
 
-    # Создаем комнату
+    return new_user.id
+
+
+def create_room(game_mode, bo_type, seed) -> dict:
+    '''Создает комнату в таблице rooms и возвращает
+    словарь содержащий id и uuid комнаты.'''
+    # TODO объединить в одну функцию
+    # assign_team
+    if seed > 2 and seed < 1:
+        seed = choice([1,2])
+    else: 
+        seed = seed
+        
     new_room = Rooms(
         game_mode_id = game_mode,
         bo_type_id = bo_type,
+        # TODO Сделать так что бы seed в таблице могло принимать значения
+        # только 1, 2. Где 1 это синяие, 2 это красные.
         seed = seed
     )
     db.session.add(new_room)
+    ''' TODO добавить обработку ошибок на случай:
+       * если запрос не дошел до базы
+       * если ответ не пришел от базы'''
     db.session.commit()
-    
-    # Создаем результат
+    return {'id': new_room.id, 'uuid': new_room.uuid}
+
+
+# TODO Функция создания результата
+def create_result(new_user_id, new_room_id, seed) -> int:
+    '''Создает результат в таблице results и
+    возвращает id результата.'''
+    # TODO Проверяем заполнена ли комната
+    # в случае если комната заполнена, выбрасываем exception, хз какой правда.
+
     new_results = Results(
-        room_id = new_room.id,
-        user_id = new_user.id,
-        team_id = seed + 1 # id команд начинаются с 1, а seed с нуля. Поэтому нужно инкрементировать.
+        room_id = new_room_id,
+        user_id = new_user_id,
+        # TODO Сделать так что бы seed в таблице могло принимать значения
+        # только 1, 2. Где 1 это синяие, 2 это красные.
+        team_id = seed
     )
 
     db.session.add(new_results)
+    ''' TODO добавить обработку ошибок на случай:
+       * если запрос не дошел до базы
+       * если ответ не пришел от базы'''
     db.session.commit()
+    return new_results.id
 
-    # возвращаем id'шники созданных вхождений
-    operation_result = {
-        "room_id": new_room.id,
-        "user_id": new_user.id,
-        "results_id": new_results.id
+def start_game(nickname, game_mode, bo_type, seed) -> dict:
+    ''' Создает пользователя если необходимо, создает комнату и результат
+    для пользователя создавшего комнату. Возвращает словарь основных
+    параметров игры для передачи его фронту.'''
+    new_user_id = create_user(nickname)
+    new_room = create_room(game_mode, bo_type, seed)
+    new_result_id = create_result(new_user_id, new_room['id'], seed)
+    game_params = {
+        'nickname': nickname,
+        'user_id': new_user_id,
+        'room_uuid': new_room['uuid'],
+        'game_mode': game_mode,
+        'bo_type': bo_type,
+        # TODO Сделать так что бы seed в таблице могло принимать значения
+        # только 1, 2. Где 1 это синяие, 2 это красные.
+        'seed': seed,
+        'result_id': new_result_id
     }
-    #redirect_url =  f'/{new_room.room_uuid}/{new_user.nickname}'
-    room_uuid = new_room.room_uuid
+    return game_params
 
-    return operation_result , room_uuid
-
-def join_room(post_nickname, post_room_uuid):
+def join_room(post_nickname, post_room_uuid) -> dict:
+    '''Создает пользователя если необходимо, проверяет существование комнаты
+    создает результат для подключающегося пользователя. Возвращает словарь
+    основных параметров игры для передачи его фронту.'''
     # Проверка на существование комнаты
     room_exist = bool(Rooms.query.filter_by(room_uuid=post_room_uuid).first())
-    
+
     if room_exist == False:
-        # TODO логики с True, False недостаточно, проработать решение.
-        return False
+        # TODO бросаем exception, хз какой правда.
+        pass
 
-    # Проверяем пользователя в базе
-    user_exist = bool(Users.query.filter_by(nickname=post_nickname).first())
-
-    if user_exist == False:
-        
-    # TODO Проверяем заполнена ли комната
-    # NOTE Если заполнена пользователь должен получить сообщение об этом
-    # либо должен быть перенаправлен в наблюдателей
-    # поэтому логика с True, False для этой функции не годится.
-
-    # Создаем пользователя
-        new_user = Users(nickname=post_nickname)
-        db.session.add(new_user)
-        db.session.commit()
-    else:
-        new_user = Users.query.filter_by(nickname=post_nickname).first()
-
-    
-    # Создаем результат
+    new_user_id = create_user(nickname=post_nickname)
+    # Получаем id комнаты по uuid
     room = Rooms.query.filter_by(room_uuid=post_room_uuid).first()
+    # TODO объединить в одну функцию
+    # assign_team
+    if room.seed == 1:
+        team_id = 2
+    elif room.seed == 2:
+        team_id = 1
+    else:
+        # TODO бросаем exception, получены не верные данные из бд.
+        pass
 
-    new_results = Results(
-        room_id = room.id, # NOTE Проверено - работает. Коммент после прочтения сжечь)
-        user_id = new_user.id,
-        # TODO нужна логика определения сида для остальных участников
-        #team_id = seed + 1 # id команд начинаются с 1, а seed с нуля. Поэтому нужно инкрементировать.
-    )
+    new_result_id = create_result(new_user_id, room.id, team_id)
+    game_params = {
+        'nickname': post_nickname,
+        'user_id': new_user_id,
+        # TODO Сделать так что бы seed в таблице могло принимать значения
+        # только 1, 2. Где 1 это синие, 2 это красные.
+        'seed': team_id,
+        'result_id': new_result_id
+    }
+    return game_params
 
-    db.session.add(new_results)
-    db.session.commit()
 
-
+# ------------------------------------
+# Функции вспомогательные
+# ------------------------------------
 def delete_room(room_id, user_id, results_id):
     ''' Удаляет пользователя, комнату и результат по заданным id таблиц'''
     # получаем вхождения который надо удалить
@@ -205,3 +248,7 @@ def delete_room(room_id, user_id, results_id):
 
     db.session.commit()
     return True
+
+#req = engine.execute("select * from users")
+#for r in req:
+#    print(r)

@@ -1,7 +1,7 @@
-from flask import render_template, url_for, redirect
+from flask import render_template, url_for, redirect, request
 from application import app
 from forms import CreateForm, JoinForm
-from database import create_room
+from database import start_game
 
 
 
@@ -9,6 +9,7 @@ from database import create_room
 # Маршруты
 # ------------------------------------
 @app.route("/")
+@app.route("/home")
 def home():
     return render_template('hello.html')
 
@@ -18,17 +19,23 @@ def create():
     ''' Форма создания комнаты '''
     form = CreateForm()
     if form.validate_on_submit():
+        # Собираем необходимые данные из формы в словарь
+        start_game_params = {}
+        for key, value in request.form.items():
+            if key != 'csrf_token' and key != 'submit':
+                start_game_params[key] = value
 
-        ''' TODO блок обработки удачного создания комнаты
-        на этом этапе необходимо создать комнату в базе и
-        получить uuid комнаты для передачи его в redirect
+        print(
+            start_game_params
+        )
+        
+        ''' TODO Функция start_game: должна создавать пользователя, комнату
+        и результат. Так же должна возвращать json со всеми значениями формы
+        для фронтенда.
         '''
-        # TODO Проверка наличия пользователя, если нет то создать пользователя
-        # TODO Создать комнату и привязать пользователя
-        # TODO Создать результат
- 
-        #_, room_uuid = create_room(nickname, game_mode, bo_type, seed)
-
+        # game_params = start_game(**start_game_params)
+        # return redirect(url_for('room', room_id=room_id, params=game_params))
+        
         room_id = 123434244142342
         return redirect(url_for('room', room_id=room_id))
     return render_template('create_form.html', form=form, errors=form.errors)
@@ -40,7 +47,7 @@ def join(room_id):
     form = JoinForm()
     if form.validate_on_submit():
 
-        # TODO проверка существования комнаты
+        # TODO вставить функцию подключения к комнате
 
         return redirect(url_for('room', room_id=room_id))
     else:
@@ -53,11 +60,24 @@ def room(room_id):
     return render_template('results.html', room_id=room_id)
 
 
+# ------------------------------------
+# Тестовые маршруты
+# ------------------------------------
+@app.route("/<room_id>/maps")
+def maps(room_id):
+    ''' Страница результатов выбора '''
+    return render_template('maps.html', room_id=room_id)
+
+@app.route("/<room_id>/champions")
+def champions(room_id):
+    ''' Страница результатов выбора '''
+    return render_template('champions.html', room_id=room_id)
+
+
 @app.route("/<room_id>/results")
 def results(room_id):
     ''' Страница результатов выбора '''
-    return render_template('room.html', room_id=room_id)
-
+    return render_template('results.html', room_id=room_id)
 
 
 # ------------------------------------
