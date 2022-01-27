@@ -1,4 +1,5 @@
-from flask import render_template, url_for, redirect, request
+import random
+from flask import jsonify, render_template, url_for, redirect, request
 from application import app
 from forms import CreateForm, JoinForm
 from database import start_game
@@ -11,8 +12,7 @@ from database import start_game
 @app.route("/")
 @app.route("/home")
 def home():
-    return render_template('hello.html')
-
+    return '<h1>Hello, Flask</h1>'
 
 @app.route("/create", methods=['GET', 'POST'])
 def create():
@@ -73,11 +73,21 @@ def champions(room_id):
     ''' Страница результатов выбора '''
     return render_template('champions.html', room_id=room_id)
 
-
 @app.route("/<room_id>/results")
 def results(room_id):
     ''' Страница результатов выбора '''
     return render_template('results.html', room_id=room_id)
+
+# маршруты, для проверки работы с xhr запросами
+@app.route("/state")
+def state():
+    result = random.choice(['map', 'champ', 'result'])
+    response = {'result': result}
+    return jsonify(response)
+
+@app.route("/test")
+def test():
+    return render_template('hello.html')
 
 
 # ------------------------------------
