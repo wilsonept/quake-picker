@@ -1,15 +1,19 @@
 import unittest
+
 from database import Object, User, Result, Room, delete_room
 
 
 
-# ------------- Константы -------------
+
+# ------ Константы ------------------------------------------------------------
+
 MAPS_IN_SEASON = 7 # количество карт в сезоне.
 
 
 
 
-# ------------- Таблицы -------------
+# ------ Таблицы --------------------------------------------------------------
+
 class TableObject(unittest.TestCase):
     """ Тестирует таблицу Objects """
 
@@ -24,7 +28,10 @@ class TableObject(unittest.TestCase):
         self.assertEqual(len(current_season_objects), MAPS_IN_SEASON)
 
 
-# ------------- Функции -------------
+
+
+# ------ Функции --------------------------------------------------------------
+
 class TestFunctions(unittest.TestCase):
     '''Тестируем функции'''
     
@@ -34,7 +41,11 @@ class TestFunctions(unittest.TestCase):
         result = delete_room(room_uuid)
         self.assertEqual(result, True)
 
-# ------------- Классы -------------
+
+
+
+# ------ Классы ---------------------------------------------------------------
+
 class TestClasses(unittest.TestCase):
     '''Тестируем классы'''
 
@@ -64,6 +75,9 @@ class TestClasses(unittest.TestCase):
             self.assertEqual(item.room_id, room_id)
 
 
+
+
+# ------ Запуск тестов --------------------------------------------------------
 
 if __name__ == '__main__':
     unittest.main()

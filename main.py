@@ -1,18 +1,21 @@
 import random
+import json
+
 from flask import jsonify, render_template, url_for, redirect, request
+
 from application import app
 from forms import CreateForm, JoinForm
-from database import start_game
+from application import _JSONRPC as jsonrpc
+from database import Room, Current_season, Object
 
 
+# ------ Маршруты APP ---------------------------------------------------------
 
-# ------------------------------------
-# Маршруты
-# ------------------------------------
 @app.route("/")
 @app.route("/home")
 def home():
     return '<h1>Hello, Flask</h1>'
+
 
 @app.route("/create", methods=['GET', 'POST'])
 def create():
@@ -60,25 +63,88 @@ def room(room_id):
     return render_template('results.html', room_id=room_id)
 
 
-# ------------------------------------
-# Тестовые маршруты
-# ------------------------------------
+
+
+# ------ Маршруты API ---------------------------------------------------------
+
+@jsonrpc.method("app.getState")
+def getState(room_uuid:str) -> str:
+    '''Возвращает текущее состояние игры на основе room_id и nickname'''
+
+    # Получаем инфу по комнате и по доступным картам
+    room = Room.get_room(room_uuid=room_uuid)
+    champions = Object.query.filter_by(type=2).all()
+    current_season = Current_season.query.all()
+    season_maps = [item.rel_objects for item in current_season]
+    results = room.rel_results
+
+    # Генерим инфу по игрокам
+    player_state = {}
+    player_states = []
+    current_game_state = {}
+    for result in results:
+        player_state['nickname'] = result.rel_users.nickname
+        player_state['map_picks'] = [
+            obj.name for obj in result.picks if obj.type==1
+        ]
+        player_state['map_bans'] = [
+            obj.name for obj in result.bans if obj.type==1
+        ]
+        player_state['champ_picks'] = [
+            obj.name for obj in result.picks if obj.type==2
+        ]
+        player_state['champ_bans'] = [
+            obj.name for obj in result.bans if obj.type==2
+        ]
+        player_states.append(player_state)
+        player_state = {}
+
+    # Генерим инфу по комнате
+    current_game_state['current_action'] = room.rel_actions.name
+    current_game_state['players'] = player_states
+    current_game_state['room_uuid'] = room_uuid
+    current_game_state['seed'] = room.seed
+
+    current_game_state['maps'] = [
+        map.name for map in season_maps if map.type==1
+    ]
+    current_game_state['champs'] = [
+        champ.name for champ in champions
+    ]
+
+    if room.rel_users != None:
+        current_game_state['current_player'] = room.rel_users.nickname
+    else:
+        current_game_state['current_player'] = ''
+
+    return json.dumps(current_game_state)
+
+
+
+
+# ------ Тестовые маршруты ----------------------------------------------------
+
 @app.route("/<room_id>/maps")
 def maps(room_id):
     ''' Страница результатов выбора '''
     return render_template('maps.html', room_id=room_id)
+
 
 @app.route("/<room_id>/champions")
 def champions(room_id):
     ''' Страница результатов выбора '''
     return render_template('champions.html', room_id=room_id)
 
+
 @app.route("/<room_id>/results")
 def results(room_id):
     ''' Страница результатов выбора '''
     return render_template('results.html', room_id=room_id)
 
-# маршруты, для проверки работы с xhr запросами
+
+
+
+# ------ маршруты, для проверки работы с xhr запросами ------------------------
 @app.route("/state")
 def state():
     result = random.choice(['map', 'champ', 'result'])
@@ -90,8 +156,9 @@ def test():
     return render_template('hello.html')
 
 
-# ------------------------------------
-# Запуск приложения
-# ------------------------------------
+
+
+# ------ Запуск приложения ----------------------------------------------------
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)

@@ -3,6 +3,10 @@ from wtforms import SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, AnyOf
 
 
+
+
+# ------ Формы ----------------------------------------------------------------
+
 class CreateForm(FlaskForm):
     game_modes = ["duel", "tdm"]
     game_mode = SelectField(label=u"Game Mode", choices=game_modes, validators=[DataRequired(),AnyOf(game_modes)])
