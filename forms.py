@@ -1,5 +1,7 @@
+from email.policy import default
+from wtforms.form import BaseForm
 from flask_wtf import FlaskForm
-from wtforms import SelectField, StringField, SubmitField
+from wtforms import SelectField, StringField, SubmitField, BooleanField, FormField
 from wtforms.validators import DataRequired, AnyOf
 
 
@@ -20,4 +22,21 @@ class CreateForm(FlaskForm):
     
 class JoinForm(FlaskForm):
     nickname = StringField(label=u"Nickname", validators=[DataRequired()])
+    submit = SubmitField(label="Submit")
+
+
+# TODO Убрать label, за ненадобностью?
+class MapsForm(FlaskForm):
+    map01 = BooleanField(label='awoken', default=False)
+    map02 = BooleanField(label='corrupted', default=False)
+    map03 = BooleanField(label='vale', default=False)
+    map04 = BooleanField(label='molten', default=False)
+    map05 = BooleanField(label='ruins', default=False)
+    map06 = BooleanField(label='deep', default=False)
+    map07 = BooleanField(label='exile', default=False)
+    submit = SubmitField(label="Submit")
+
+
+class ChampsForm(FlaskForm):
+    # TODO Сделать по аналогии с MapsForm
     submit = SubmitField(label="Submit")

@@ -1,4 +1,5 @@
 import random
+import json
 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import text as sa_text
@@ -74,6 +75,7 @@ class Room(db.Model):
     game_mode_id = db.Column(db.Integer,db.ForeignKey('game_modes.id'), nullable=False)
     current_user_id = db.Column(db.Integer, db.ForeignKey('users.id') ,nullable=False, default = 4)
     current_action_id = db.Column(db.Integer, db.ForeignKey('actions.id') ,nullable=False, default = 4)
+    current_step = db.Column(db.String, nullable=False) # указывает на текущий шаг выбора либо map, либо champ 
 
     # Указывает какой игрок начинает игру, выбирается через форму создания комнаты
     seed = db.Column(db.Integer, nullable=False)
@@ -159,8 +161,10 @@ class Result(db.Model):
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
     room_id = db.Column(db.Integer,db.ForeignKey('rooms.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    picks = db.Column(db.String, nullable=True)
-    bans = db.Column(db.String, nullable=True)
+    map_picks = db.Column(db.String, nullable=True)
+    map_bans = db.Column(db.String, nullable=True)
+    champ_picks = db.Column(db.String, nullable=True)
+    champ_bans = db.Column(db.String, nullable=True)
     team_id = db.Column(db.Integer,db.ForeignKey('teams.id'), nullable=False)
 
     rel_users = db.relationship("User", back_populates="rel_results")
@@ -171,13 +175,9 @@ class Result(db.Model):
     def get_result(cls, room_id, **kwargs):
         '''Ищет результаты игроков по id комнаты, так же принимает **kwargs
         для дополнительной фильтрации'''
-        try:
-            requested_result = cls.query.filter_by(room_id=room_id, **kwargs).all()
-            db.session.commit()
-        except:
-            # отменяем транзакцию в случае ошибки.
-            db.session.rollback()
-            raise
+
+        requested_result = cls.query.filter_by(room_id=room_id, **kwargs).all()
+
         return requested_result
 
     @classmethod
@@ -203,6 +203,64 @@ class Result(db.Model):
             raise
         return new_results.id
 
+
+    @classmethod
+    def update_result(cls, room_id, action, user_id, choice):
+        '''Вносит в базу выбор игрока'''
+        result = cls.get_result(room_id=room_id, user_id=user_id)[0]
+        if not result:
+            # если нет такой комнаты или пользователя
+            raise ValueError
+
+        current_step = result.rel_rooms.current_step
+        current_action = result.rel_rooms.rel_actions
+        if current_action.name != action:
+            raise ValueError
+
+        if action == 'ban':
+            # TODO Добавить проверку на совпадения в существующем списке банов
+            # TODO Найти элегантное решение вместо этого колхоза.
+            # NOTE Этот кусок кода нужен что бы создать совершенно новый список
+            # Если этого не сделать, а просто добавить значение к result.bans
+            # или result.picks, то изменения в базе не применятся.
+            bans = []
+            if current_step == 'map':
+                for ban in result.map_bans:
+                    bans.append(ban)
+                bans.append(choice)
+                result.map_bans = bans
+            else:
+                for ban in result.champ_bans:
+                    bans.append(ban)
+                bans.append(choice)
+                result.champ_bans = bans
+        else:
+            # TODO Добавить проверку на совпадения в существующем списке пиков
+            # TODO Найти элегантное решение вместо этого колхоза.
+            # NOTE Этот кусок кода нужен что бы создать совершенно новый список
+            # Если этого не сделать, а просто добавить значение к result.bans
+            # или result.picks, то изменения в базе не применятся.
+            picks = []
+            if current_step == 'map':
+                for pick in result.map_picks:
+                    picks.append(pick)
+                picks.append(choice)
+                result.map_picks = picks
+            else:
+                for pick in result.champ_picks:
+                    picks.append(pick)
+                picks.append(choice)
+                result.champ_picks = picks
+
+        try:
+            db.session.add(result)
+            db.session.commit()
+        except:
+            # отменяем транзакцию в случае ошибки.
+            db.session.rollback()
+            raise
+
+        return True
 
 class Action(db.Model):
     '''Таблица действий. Ban, pick, wait, end. Wait необходим для того
@@ -371,3 +429,53 @@ def delete_room(room_uuid):
 # room = Room.get_room('dc3ad9c1-7452-40b6-99a1-e98ddc18a31e')
 # result = Result.get_result(1)
 # pass
+
+def generate_report(room_uuid):
+    '''Генерируем полный отчет о состоянии игры в JSON формате'''
+    # Получаем инфу по комнате и по доступным картам
+    room = Room.get_room(room_uuid=room_uuid)
+    champions = Object.query.filter_by(type=2).all()
+    current_season = Current_season.query.all()
+    season_maps = [item.rel_objects for item in current_season]
+    results = room.rel_results
+
+    # Генерим инфу по игрокам
+    player_state = {}
+    player_states = []
+    current_game_state = {}
+    for result in results:
+        player_state['nickname'] = result.rel_users.nickname
+        player_state['map_picks'] = [
+            obj for obj in result.map_picks
+        ]
+        player_state['map_bans'] = [
+            obj for obj in result.map_bans
+        ]
+        player_state['champ_picks'] = [
+            obj for obj in result.champ_picks
+        ]
+        player_state['champ_bans'] = [
+            obj for obj in result.champ_bans
+        ]
+        player_states.append(player_state)
+        player_state = {}
+
+    # Генерим инфу по комнате
+    current_game_state['current_action'] = room.rel_actions.name
+    current_game_state['players'] = player_states
+    current_game_state['room_uuid'] = room_uuid
+    current_game_state['seed'] = room.seed
+
+    current_game_state['maps'] = [
+        map.name for map in season_maps if map.type==1
+    ]
+    current_game_state['champs'] = [
+        champ.name for champ in champions
+    ]
+
+    if room.rel_users != None:
+        current_game_state['current_player'] = room.rel_users.nickname
+    else:
+        current_game_state['current_player'] = ''
+
+    return json.dumps(current_game_state)

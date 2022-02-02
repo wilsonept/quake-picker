@@ -1,12 +1,12 @@
 import random
-import json
 
 from flask import jsonify, render_template, url_for, redirect, request
 
 from application import app
-from forms import CreateForm, JoinForm
+from forms import CreateForm, JoinForm, MapsForm, ChampsForm
 from application import _JSONRPC as jsonrpc
-from database import Room, Current_season, Object
+from database import Room, Current_season, Object, Result, generate_report
+
 
 
 # ------ Маршруты APP ---------------------------------------------------------
@@ -67,57 +67,34 @@ def room(room_id):
 
 # ------ Маршруты API ---------------------------------------------------------
 
-@jsonrpc.method("app.getState")
+@jsonrpc.method("app.getState", validate=False)
 def getState(room_uuid:str) -> str:
     '''Возвращает текущее состояние игры на основе room_id и nickname'''
 
-    # Получаем инфу по комнате и по доступным картам
-    room = Room.get_room(room_uuid=room_uuid)
-    champions = Object.query.filter_by(type=2).all()
-    current_season = Current_season.query.all()
-    season_maps = [item.rel_objects for item in current_season]
-    results = room.rel_results
+    return generate_report(room_uuid)
 
-    # Генерим инфу по игрокам
-    player_state = {}
-    player_states = []
-    current_game_state = {}
-    for result in results:
-        player_state['nickname'] = result.rel_users.nickname
-        player_state['map_picks'] = [
-            obj.name for obj in result.picks if obj.type==1
-        ]
-        player_state['map_bans'] = [
-            obj.name for obj in result.bans if obj.type==1
-        ]
-        player_state['champ_picks'] = [
-            obj.name for obj in result.picks if obj.type==2
-        ]
-        player_state['champ_bans'] = [
-            obj.name for obj in result.bans if obj.type==2
-        ]
-        player_states.append(player_state)
-        player_state = {}
 
-    # Генерим инфу по комнате
-    current_game_state['current_action'] = room.rel_actions.name
-    current_game_state['players'] = player_states
-    current_game_state['room_uuid'] = room_uuid
-    current_game_state['seed'] = room.seed
+@jsonrpc.method("app.updateState")
+def updateState(room_uuid:str, action:str, nickname:str, choice:str) -> str:
+    '''Принимает выбор игрока, room_id, action, nickname, choice.
+    Возвращает json cо всем состоянием игры'''
+    
+    # Ищем комнату и активного игрока
+    room = Room.get_room(room_uuid)
+    if room.rel_users.nickname != nickname:
+        # TODO написать нормальную обработку ошибок
+        return
 
-    current_game_state['maps'] = [
-        map.name for map in season_maps if map.type==1
-    ]
-    current_game_state['champs'] = [
-        champ.name for champ in champions
-    ]
+    # Вносим изменения в результат
+    try:
+        Result.update_result(room.id, action, room.current_user_id, choice)
+    except ValueError:
+        # TODO написать нормальную обработку ошибок
+        print('Something went wrong inside the class method')
 
-    if room.rel_users != None:
-        current_game_state['current_player'] = room.rel_users.nickname
-    else:
-        current_game_state['current_player'] = ''
-
-    return json.dumps(current_game_state)
+    # Возвращаем состояние комнаты
+    # TODO Разобраться как вызвать JSON-RPC роут по аналогии с redirect()
+    return generate_report(room_uuid)
 
 
 
@@ -140,6 +117,13 @@ def champions(room_id):
 def results(room_id):
     ''' Страница результатов выбора '''
     return render_template('results.html', room_id=room_id)
+
+
+@app.route("/picking_form", methods=['GET'])
+def picking_form():
+    ''' Форма пика карт'''
+    form = MapsForm()
+    return render_template('maps_form.html', form=form)
 
 
 
