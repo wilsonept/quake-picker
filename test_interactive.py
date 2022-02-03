@@ -1,6 +1,10 @@
 import json
-
 import requests
+
+from database import Room, User, Result
+
+
+
 
 # ------ Константы -------------------------------------------------------------
 
@@ -49,4 +53,17 @@ def test_updateState():
     print(response.json())
     response.raise_for_status()
 
-test_updateState()
+# test_updateState()
+
+
+user_id = User.create_user('wilson')
+
+game_mode = 1
+bo_type = 1
+seed = 1
+
+room = Room.create_room(game_mode, bo_type, seed)
+
+result = Result.create_result(user_id, room['id'], team_id=1)
+
+result

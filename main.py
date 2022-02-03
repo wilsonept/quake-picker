@@ -3,9 +3,9 @@ import random
 from flask import jsonify, render_template, url_for, redirect, request
 
 from application import app
-from forms import CreateForm, JoinForm, MapsForm, ChampsForm
+from forms import CreateForm, JoinForm, MapsForm
 from application import _JSONRPC as jsonrpc
-from database import Room, Current_season, Object, Result, generate_report
+from database import Room, Result, generate_report, start_game
 
 
 
@@ -28,39 +28,45 @@ def create():
             if key != 'csrf_token' and key != 'submit':
                 start_game_params[key] = value
 
-        print(
-            start_game_params
-        )
+        game_params = start_game(**start_game_params)
         
         ''' TODO Функция start_game: должна создавать пользователя, комнату
         и результат. Так же должна возвращать json со всеми значениями формы
         для фронтенда.
         '''
-        # game_params = start_game(**start_game_params)
         # return redirect(url_for('room', room_id=room_id, params=game_params))
         
-        room_id = 123434244142342
-        return redirect(url_for('room', room_id=room_id))
+        return redirect(url_for(
+            'room',
+            room_uuid=game_params['room_uuid']),
+            game_params=game_params
+        )
+
     return render_template('create_form.html', form=form, errors=form.errors)
 
 
-@app.route("/<room_id>/join", methods=['GET', 'POST'])
-def join(room_id):
+@app.route("/<room_uuid>/join", methods=['GET', 'POST'])
+def join(room_uuid):
     ''' Форма подключения к комнате '''
     form = JoinForm()
     if form.validate_on_submit():
 
         # TODO вставить функцию подключения к комнате
 
-        return redirect(url_for('room', room_id=room_id))
+        return redirect(url_for('room', room_uuid=room_uuid))
     else:
-        return render_template('join_form.html', form=form, errors=form.errors, room_id=room_id)
+        return render_template(
+            'join_form.html',
+            form=form,
+            errors=form.errors,
+            room_uuid=room_uuid
+        )
 
 
-@app.route("/<room_id>/room", methods=['GET', 'POST'])
-def room(room_id):
+@app.route("/<room_uuid>/room", methods=['GET', 'POST'])
+def room(room_uuid):
     ''' Основная страница выбора, она же комната '''
-    return render_template('results.html', room_id=room_id)
+    return render_template('results.html', room_uuid=room_uuid)
 
 
 
@@ -101,22 +107,22 @@ def updateState(room_uuid:str, action:str, nickname:str, choice:str) -> str:
 
 # ------ Тестовые маршруты ----------------------------------------------------
 
-@app.route("/<room_id>/maps")
-def maps(room_id):
+@app.route("/<room_uuid>/maps")
+def maps(room_uuid):
     ''' Страница результатов выбора '''
-    return render_template('maps.html', room_id=room_id)
+    return render_template('maps.html', room_uuid=room_uuid)
 
 
-@app.route("/<room_id>/champions")
-def champions(room_id):
+@app.route("/<room_uuid>/champions")
+def champions(room_uuid):
     ''' Страница результатов выбора '''
-    return render_template('champions.html', room_id=room_id)
+    return render_template('champions.html', room_uuid=room_uuid)
 
 
-@app.route("/<room_id>/results")
-def results(room_id):
+@app.route("/<room_uuid>/results")
+def results(room_uuid):
     ''' Страница результатов выбора '''
-    return render_template('results.html', room_id=room_id)
+    return render_template('results.html', room_uuid=room_uuid)
 
 
 @app.route("/picking_form", methods=['GET'])

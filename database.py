@@ -14,7 +14,8 @@ from application import _DB as db
 # TODO Привести в порядок свойства отношений моделей. Что бы названия
 # соответствовали типам связей между таблицами.
 
-
+'''TODO Функция или Класс преобразования данных полученных из формы в
+удобоваримые для классов моделей БД. Принимает str, возвращает int'''
 
 
 # ------ Модели ---------------------------------------------------------------
@@ -70,21 +71,21 @@ class Room(db.Model):
     __tablename__ = 'rooms'
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
-    room_uuid = db.Column(UUID(as_uuid=True),nullable=True, server_default=sa_text("uuid_generate_v4()")) 
+    room_uuid = db.Column(UUID(as_uuid=True), nullable=True, server_default=sa_text("uuid_generate_v4()")) 
     bo_type_id = db.Column(db.Integer,db.ForeignKey('bo_types.id'), nullable=False)
     game_mode_id = db.Column(db.Integer,db.ForeignKey('game_modes.id'), nullable=False)
-    current_user_id = db.Column(db.Integer, db.ForeignKey('users.id') ,nullable=False, default = 4)
-    current_action_id = db.Column(db.Integer, db.ForeignKey('actions.id') ,nullable=False, default = 4)
-    current_step = db.Column(db.String, nullable=False) # указывает на текущий шаг выбора либо map, либо champ 
+    current_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    current_action_id = db.Column(db.Integer, db.ForeignKey('actions.id'), nullable=False, default = 4)
+    current_step_id = db.Column(db.Integer, db.ForeignKey('object_types.id'), nullable=False, default = 1)
+    seed = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=False)
 
-    # Указывает какой игрок начинает игру, выбирается через форму создания комнаты
-    seed = db.Column(db.Integer, nullable=False)
-
-    rel_results = db.relationship("Result", back_populates="rel_rooms")
+    rel_object_types = db.relationship("Object_type", back_populates="rel_rooms")
     rel_game_modes = db.relationship("Game_mode", back_populates="rel_rooms")
     rel_bo_types = db.relationship("Bo_type", back_populates="rel_rooms")
+    rel_results = db.relationship("Result", back_populates="rel_rooms")
     rel_actions = db.relationship("Action", back_populates="rel_rooms")
     rel_users = db.relationship("User", back_populates="rel_rooms")
+    rel_teams = db.relationship("Team", back_populates="rel_rooms")
 
     @classmethod
     def get_room(cls, room_uuid):
@@ -100,17 +101,22 @@ class Room(db.Model):
 
     @classmethod
     def create_room(cls, game_mode, bo_type, seed) -> dict:
-        '''Создает комнату в таблице rooms и возвращает
-        словарь содержащий id и uuid комнаты.'''
+        '''Создает комнату в таблице rooms и возвращает словарь содержащий
+        id и uuid комнаты. На вход принимает только int'''
+
+        room_params = {
+            "game_mode_id": game_mode,
+            "bo_type_id": bo_type,
+            "seed": seed,
+            # TODO Поля ниже должны заполнятся на основе конфига или класса
+            # который описывает определенные game_mod'ы и bo_typ'ы
+            "current_action_id": 2,
+            "current_step_id": 1
+        }
 
         # создаем комнату
-        new_room = cls(
-            game_mode_id = game_mode,
-            bo_type_id = bo_type,
-            # TODO Сделать так что бы seed в таблице могло принимать значения
-            # только 1, 2. Где 1 это синяие, 2 это красные.
-            seed = seed
-        )
+        new_room = cls(**room_params)
+
         try:
             db.session.add(new_room)
             db.session.commit()
@@ -118,24 +124,18 @@ class Room(db.Model):
             # отменяем транзакцию в случае ошибки.
             db.session.rollback()
             raise
-        return {'id': new_room.id, 'uuid': new_room.uuid}
+        return {'id': new_room.id, 'uuid': new_room.room_uuid}
 
     @classmethod
     def init_current_user(cls):
-        '''Обновляет запись активного игрока в комнате.'''
-        if cls.seed == 0:
-            team = 1
-        elif cls.seed == 1:
-            team = 2
-        else:
-            team = random.choice([1,2])
+        '''Создает запись активного игрока в комнате.'''
 
         try:
             for result in cls.rel_results:
-                '''NOTE Будет работать только с двумя Тимами!!!'''
-                if result.team_id == team:
+                if result.team_id == cls.seed:
                     cls.current_user_id = result.user_id
                     db.session.commit()
+                    break
         except:
             # отменяем транзакцию в случае ошибки.
             db.session.rollback()
@@ -181,19 +181,21 @@ class Result(db.Model):
         return requested_result
 
     @classmethod
-    def create_result(cls, new_user_id, new_room_id, team_id) -> int:
+    def create_result(cls, user_id, room_id, team_id) -> int:
         '''Создает результат в таблице results и
         возвращает id результата.'''
         # TODO Проверяем заполнена ли комната
         # в случае если комната заполнена, выбрасываем exception, хз какой правда.
 
-        new_results = cls(
-            room_id = new_room_id,
-            user_id = new_user_id,
-            # TODO Сделать так что бы seed в таблице могло принимать значения
-            # только 1, 2. Где 1 это синяие, 2 это красные.
-            team_id = team_id
-        )
+        result_params = {
+            "user_id": user_id,
+            "room_id": room_id,
+            "team_id": team_id
+        }
+
+        # создаем результат
+        new_results = cls(**result_params)
+        
         try:
             db.session.add(new_results)
             db.session.commit()
@@ -314,6 +316,7 @@ class Object_type(db.Model):
     name = db.Column(db.String(40), nullable=False)
 
     rel_objects = db.relationship("Object", back_populates="rel_object_types")
+    rel_rooms = db.relationship("Room", back_populates="rel_object_types")
 
 
 class Object(db.Model):
@@ -338,6 +341,7 @@ class Team(db.Model):
     name = db.Column(db.String(40), nullable=False)
 
     rel_results = db.relationship("Result", back_populates="rel_teams")
+    rel_rooms = db.relationship("Room", back_populates="rel_teams")
 
 
 
@@ -357,10 +361,12 @@ def start_game(nickname, game_mode, bo_type, seed) -> dict:
         'room_uuid': new_room['uuid'],
         'game_mode': game_mode,
         'bo_type': bo_type,
-        # TODO Сделать так что бы seed в таблице могло принимать значения
-        # только 1, 2. Где 1 это синяие, 2 это красные.
         'seed': seed,
-        'result_id': new_result_id
+        'result_id': new_result_id,
+        'map_picks': [],
+        'map_bans': [],
+        'champ_picks': [],
+        'cahmp_bans': []
     }
     return game_params
 
