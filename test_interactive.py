@@ -1,7 +1,7 @@
 import json
 import requests
 
-from database import Room, User, Result
+from database import ICreateForm, IJoinForm, Room, User, Result
 
 
 
@@ -56,14 +56,24 @@ def test_updateState():
 # test_updateState()
 
 
-user_id = User.create_user('wilson')
+# Тестируем создание юзера
+# user_id = User.create_user('wilson')
 
-game_mode = 1
-bo_type = 1
-seed = 1
+# Тестируем создание комнаты
+# game_mode = 1
+# bo_type = 1
+# seed = 1
+# room = Room.create_room(game_mode, bo_type, seed)
 
-room = Room.create_room(game_mode, bo_type, seed)
+# Тестируем создание результата
+# result = Result.create_result(user_id, room['id'], team_id=1)
+# result
 
-result = Result.create_result(user_id, room['id'], team_id=1)
+# Тестируем интерфейс формы подключения
+# room_id = IJoinForm('fccb25ed-6373-4d6f-9087-5fce45a2fd64')
 
-result
+# Тестируем интерфейс формы создания игры
+# game_mode = 'duel'
+# bo_type = 'bo3'
+# seed = 'You'
+# gbs = ICreateForm(game_mode, bo_type, seed)

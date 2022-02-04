@@ -15,7 +15,8 @@ from application import _DB as db
 # соответствовали типам связей между таблицами.
 
 '''TODO Функция или Класс преобразования данных полученных из формы в
-удобоваримые для классов моделей БД. Принимает str, возвращает int'''
+удобоваримые для классов моделей БД. Принимает str, возвращает int
+'''
 
 
 # ------ Модели ---------------------------------------------------------------
@@ -46,7 +47,8 @@ class User(db.Model):
     @classmethod
     def create_user(cls, nickname) -> int:
         '''Создает пользователя в таблице если необходимо и возвращает
-        id пользователя.'''
+        id пользователя.
+        '''
         # Проверяем пользователя в базе
         user_exist = bool(cls.get_user(nickname))
 
@@ -102,7 +104,8 @@ class Room(db.Model):
     @classmethod
     def create_room(cls, game_mode, bo_type, seed) -> dict:
         '''Создает комнату в таблице rooms и возвращает словарь содержащий
-        id и uuid комнаты. На вход принимает только int'''
+        id и uuid комнаты. На вход принимает только int
+        '''
 
         room_params = {
             "game_mode_id": game_mode,
@@ -174,7 +177,8 @@ class Result(db.Model):
     @classmethod
     def get_result(cls, room_id, **kwargs):
         '''Ищет результаты игроков по id комнаты, так же принимает **kwargs
-        для дополнительной фильтрации'''
+        для дополнительной фильтрации
+        '''
 
         requested_result = cls.query.filter_by(room_id=room_id, **kwargs).all()
 
@@ -183,7 +187,8 @@ class Result(db.Model):
     @classmethod
     def create_result(cls, user_id, room_id, team_id) -> int:
         '''Создает результат в таблице results и
-        возвращает id результата.'''
+        возвращает id результата.
+        '''
         # TODO Проверяем заполнена ли комната
         # в случае если комната заполнена, выбрасываем exception, хз какой правда.
 
@@ -267,7 +272,8 @@ class Result(db.Model):
 class Action(db.Model):
     '''Таблица действий. Ban, pick, wait, end. Wait необходим для того
     что бы сказать фронту что нужно подождать второго игрока. End для того
-    что бы закончить игру и вывести результат'''
+    что бы закончить игру и вывести результат
+    '''
     __tablename__ = 'actions'
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
@@ -278,7 +284,8 @@ class Action(db.Model):
 
 class Bo_type(db.Model):
     '''Таблица типов игр по колическу карт в матче.
-    Содержит bo1, bo3, bo5, bo7'''
+    Содержит bo1, bo3, bo5, bo7
+    '''
     __tablename__ = 'bo_types'
     
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
@@ -351,7 +358,8 @@ class Team(db.Model):
 def start_game(nickname, game_mode, bo_type, seed) -> dict:
     ''' Создает пользователя если необходимо, создает комнату и результат
     для пользователя создавшего комнату. Возвращает словарь основных
-    параметров игры для передачи его фронту.'''
+    параметров игры для передачи его фронту.
+    '''
     new_user_id = User.create_user(nickname)
     new_room = Room.create_room(game_mode, bo_type, seed)
     new_result_id = Result.create_result(new_user_id, new_room['id'], team_id=1)
@@ -373,7 +381,8 @@ def start_game(nickname, game_mode, bo_type, seed) -> dict:
 def join_room(nickname, room_uuid) -> dict:
     '''Создает пользователя если необходимо, проверяет существование комнаты
     создает результат для подключающегося пользователя. Возвращает словарь
-    основных параметров игры для передачи его фронту.'''
+    основных параметров игры для передачи его фронту.
+    '''
     # Проверка на существование комнаты
     room_exist = bool(Room.query.filter_by(room_uuid=room_uuid).first())
     if not room_exist:
@@ -485,3 +494,48 @@ def generate_report(room_uuid):
         current_game_state['current_player'] = ''
 
     return json.dumps(current_game_state)
+
+
+class IJoinForm():
+    '''Интерфейс формы подключения к комнате
+    Принимает на вход строковое значени room_uuid
+    Возвращает room_id
+    '''
+    
+    def __init__(self, room_uuid):
+        self.room_id = Room.query.filter_by(room_uuid=room_uuid).first().id
+    
+    def __repr__(self):
+        return self.room_id
+
+
+class ICreateForm():
+    '''Интерфейс формы создания комнаты
+    Принимает на вход строковые значения:
+        * game_mode
+        * bo_type
+        * seed
+    Возвращает словарь id:
+        * game_mode_id
+        * bo_type_id
+        * seed
+        NOTE seed указывает на team_id
+    '''
+
+    def __init__(self, game_mode, bo_type, seed):
+        self.game_mode_id = Game_mode.query.filter_by(name=game_mode).first().id
+        self.bo_type_id = Bo_type.query.filter_by(name=bo_type).first().id
+
+        if seed == 'Opponent':
+            self.seed = 2
+        elif seed == 'You':
+            self.seed = 1
+        else:
+            self.seed = random.choice([1,2])
+    
+    def __repr__(self):
+        return {
+            'game_mode_id': self.game_mode_id,
+            'bo_type_id': self.bo_type_id,
+            'seed': self.seed
+        }
