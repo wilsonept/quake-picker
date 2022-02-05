@@ -36,11 +36,8 @@ def create():
         '''
         # return redirect(url_for('room', room_id=room_id, params=game_params))
         
-        return redirect(url_for(
-            'room',
-            room_uuid=game_params['room_uuid']),
-            game_params=game_params
-        )
+        return redirect(url_for('room', room_uuid=game_params['room_uuid']),
+                                game_params=game_params)
 
     return render_template('create_form.html', form=form, errors=form.errors)
 
@@ -55,12 +52,8 @@ def join(room_uuid):
 
         return redirect(url_for('room', room_uuid=room_uuid))
     else:
-        return render_template(
-            'join_form.html',
-            form=form,
-            errors=form.errors,
-            room_uuid=room_uuid
-        )
+        return render_template('join_form.html', form=form, errors=form.errors,
+                               room_uuid=room_uuid)
 
 
 @app.route("/<room_uuid>/room", methods=['GET', 'POST'])

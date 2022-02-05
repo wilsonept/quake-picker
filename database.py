@@ -14,10 +14,6 @@ from application import _DB as db
 # TODO Привести в порядок свойства отношений моделей. Что бы названия
 # соответствовали типам связей между таблицами.
 
-'''TODO Функция или Класс преобразования данных полученных из формы в
-удобоваримые для классов моделей БД. Принимает str, возвращает int
-'''
-
 
 # ------ Модели ---------------------------------------------------------------
 
@@ -25,7 +21,8 @@ class User(db.Model):
     '''Таблица пользователей.'''
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
     nickname = db.Column(db.String(40), nullable=False)
     is_persistent = db.Column(db.Boolean, nullable=False, default=False)
 
@@ -72,16 +69,24 @@ class Room(db.Model):
     '''Таблица комнат'''
     __tablename__ = 'rooms'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
-    room_uuid = db.Column(UUID(as_uuid=True), nullable=True, server_default=sa_text("uuid_generate_v4()")) 
-    bo_type_id = db.Column(db.Integer,db.ForeignKey('bo_types.id'), nullable=False)
-    game_mode_id = db.Column(db.Integer,db.ForeignKey('game_modes.id'), nullable=False)
-    current_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    current_action_id = db.Column(db.Integer, db.ForeignKey('actions.id'), nullable=False, default = 4)
-    current_step_id = db.Column(db.Integer, db.ForeignKey('object_types.id'), nullable=False, default = 1)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
+    room_uuid = db.Column(UUID(as_uuid=True), nullable=True,
+                          server_default=sa_text("uuid_generate_v4()")) 
+    bo_type_id = db.Column(db.Integer,db.ForeignKey('bo_types.id'),
+                           nullable=False)
+    game_mode_id = db.Column(db.Integer,db.ForeignKey('game_modes.id'),
+                             nullable=False)
+    current_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                                nullable=True)
+    current_action_id = db.Column(db.Integer, db.ForeignKey('actions.id'),
+                                  nullable=False, default = 4)
+    current_step_id = db.Column(db.Integer, db.ForeignKey('object_types.id'),
+                                nullable=False, default = 1)
     seed = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=False)
 
-    rel_object_types = db.relationship("Object_type", back_populates="rel_rooms")
+    rel_object_types = db.relationship("Object_type",
+                                       back_populates="rel_rooms")
     rel_game_modes = db.relationship("Game_mode", back_populates="rel_rooms")
     rel_bo_types = db.relationship("Bo_type", back_populates="rel_rooms")
     rel_results = db.relationship("Result", back_populates="rel_rooms")
@@ -161,7 +166,8 @@ class Result(db.Model):
     '''Таблица результатов.'''
     __tablename__ = 'results'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
     room_id = db.Column(db.Integer,db.ForeignKey('rooms.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     map_picks = db.Column(db.String, nullable=True)
@@ -190,7 +196,7 @@ class Result(db.Model):
         возвращает id результата.
         '''
         # TODO Проверяем заполнена ли комната
-        # в случае если комната заполнена, выбрасываем exception, хз какой правда.
+        # в случае если комната заполнена, выбрасываем какую то ошибку...
 
         result_params = {
             "user_id": user_id,
@@ -270,13 +276,14 @@ class Result(db.Model):
         return True
 
 class Action(db.Model):
-    '''Таблица действий. Ban, pick, wait, end. Wait необходим для того
-    что бы сказать фронту что нужно подождать второго игрока. End для того
-    что бы закончить игру и вывести результат
+    '''Таблица действий. Ban, pick, wait, end. Wait необходим для того что бы
+    сказать фронту что нужно подождать второго игрока. End для того что бы
+    закончить игру и вывести результат
     '''
     __tablename__ = 'actions'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
     name = db.Column(db.String(30), nullable=False)
 
     rel_rooms = db.relationship("Room", back_populates="rel_actions")
@@ -288,7 +295,8 @@ class Bo_type(db.Model):
     '''
     __tablename__ = 'bo_types'
     
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
     rel_rooms = db.relationship("Room", back_populates="rel_bo_types")
@@ -298,17 +306,21 @@ class Current_season(db.Model):
     '''Таблица карт доступных в текущем сезоне.'''
     __tablename__ = 'current_season'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
-    object_id = db.Column(db.Integer,db.ForeignKey('objects.id'), nullable=False)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
+    object_id = db.Column(db.Integer,db.ForeignKey('objects.id'),
+                          nullable=False)
 
-    rel_objects = db.relationship("Object", back_populates="rel_current_season")
+    rel_objects = db.relationship("Object",
+                                  back_populates="rel_current_season")
 
 
 class Game_mode(db.Model):
     '''Таблица режимов игры. Содержит duel и tdm.'''
     __tablename__ = 'game_modes'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
     player_count = db.Column(db.Integer, nullable=False, unique=False)
 
@@ -319,7 +331,8 @@ class Object_type(db.Model):
     '''Таблица типов объектов. Содержит в себе 2 типа: карты и чемпионы'''
     __tablename__ = 'object_types'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
     rel_objects = db.relationship("Object", back_populates="rel_object_types")
@@ -330,21 +343,25 @@ class Object(db.Model):
     '''Таблица объектов. Содержит в себе все карты и всех чемпионов.'''
     __tablename__ = 'objects'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
     type = db.Column(db.Integer,db.ForeignKey('object_types.id'), nullable=False)
     name = db.Column(db.String(40), nullable=False)
     shortname = db.Column(db.String(10), nullable=False)
     img_url = db.Column(db.String(300), nullable=False)
 
-    rel_current_season = db.relationship("Current_season", back_populates="rel_objects")
-    rel_object_types = db.relationship("Object_type", back_populates="rel_objects")
+    rel_current_season = db.relationship("Current_season",
+                                         back_populates="rel_objects")
+    rel_object_types = db.relationship("Object_type",
+                                       back_populates="rel_objects")
 
 
 class Team(db.Model):
     '''Таблица команд. Пока только blue и red.'''
     __tablename__ = 'teams'
 
-    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
+                   autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
     rel_results = db.relationship("Result", back_populates="rel_teams")
