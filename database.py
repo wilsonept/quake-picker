@@ -13,6 +13,11 @@ from application import _DB as db
 # TODO Привести в порядок свойства отношений моделей. Что бы названия
 # соответствовали типам связей между таблицами.
 
+''' TODO Схема была серьезно переработана. Привести классы моделей к виду
+схемы. Создать новую таблицу rules в базе данных и модель к ней. Заполнить
+таблицу правилами.
+'''
+
 ''' TODO Продумать логику методов в классах. Пришла мысль о том что методы
 создания результата логичнее расположить внутри класса Room.
 '''
@@ -509,16 +514,3 @@ def generate_report(room_uuid):
         current_game_state['current_player'] = ''
 
     return current_game_state
-
-
-class IJoinForm():
-    '''Интерфейс формы подключения к комнате
-    Принимает на вход строковое значени room_uuid
-    Возвращает room_id
-    '''
-    
-    def __init__(self, room_uuid):
-        self.room_id = Room.query.filter_by(room_uuid=room_uuid).first().id
-    
-    def __repr__(self):
-        return self.room_id

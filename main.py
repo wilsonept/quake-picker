@@ -41,7 +41,7 @@ def create():
     return render_template('create_form.html', form=form, errors=form.errors)
 
 
-@app.route("/<room_uuid>/join", methods=['GET', 'POST'])
+@app.route("/<uuid:room_uuid>/join", methods=['GET', 'POST'])
 def join(room_uuid):
     ''' Форма подключения к комнате '''
     form = JoinForm()
@@ -69,8 +69,8 @@ def join(room_uuid):
                                room_uuid=room_uuid)
 
 
-@app.route("/<string:room_uuid>")
-@app.route("/<string:room_uuid>/<string:nickname>", methods=['GET'])
+@app.route("/<uuid:room_uuid>")
+@app.route("/<uuid:room_uuid>/<string:nickname>", methods=['GET'])
 def room(room_uuid, **kwargs):
     ''' Основная страница выбора, она же комната '''
 
@@ -127,19 +127,19 @@ def updateState(room_uuid:str, action:str, nickname:str, choice:str) -> str:
 
 # ------ Тестовые маршруты ----------------------------------------------------
 
-@app.route("/<room_uuid>/maps")
+@app.route("/<uuid:room_uuid>/maps")
 def maps(room_uuid):
     ''' Страница результатов выбора '''
     return render_template('maps.html', room_uuid=room_uuid)
 
 
-@app.route("/<room_uuid>/champions")
+@app.route("/<uuid:room_uuid>/champions")
 def champions(room_uuid):
     ''' Страница результатов выбора '''
     return render_template('champions.html', room_uuid=room_uuid)
 
 
-@app.route("/<room_uuid>/results")
+@app.route("/<uuid:room_uuid>/results")
 def results(room_uuid):
     ''' Страница результатов выбора '''
     return render_template('results.html', room_uuid=room_uuid)
