@@ -24,7 +24,7 @@ class CreateForm(FlaskForm):
                        validators=[DataRequired(), AnyOf(seeds)])
     submit = SubmitField(label="Submit")
 
-    
+    # TODO Попробовать реализовать через класс IFormConverter
     def convert_data(self, game_mode, bo_type, seed, nickname) -> dict:
         '''Конвертирует полученные строчные данные в id'шники
         Принимает на вход строковые значения:
@@ -63,13 +63,10 @@ class JoinForm(FlaskForm):
     nickname = StringField(label=u"Nickname", validators=[DataRequired()])
     submit = SubmitField(label="Submit")
 
+    # TODO Попробовать реализовать через класс IFormConverter
+    # NOTE Если в форме заполняется только nickname то эта функция не нужна!!!
     def convert_data(self, room_uuid, nickname) -> dict:
-
-        # room_uuid = kwargs["room_uuid"]
-        # nickname = kwargs["nickname"]
-
         room_id = Room.query.filter_by(room_uuid=room_uuid).first().id
-
         return {"room_id": room_id, "nickname": nickname}
 
 # TODO Убрать label, за ненадобностью?

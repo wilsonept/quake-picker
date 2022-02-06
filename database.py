@@ -389,21 +389,20 @@ def start_game(nickname, game_mode_id, bo_type_id, seed) -> dict:
     # Забираем из типа UUID только строковое представление этого uuid
     new_room_uuid = new_room['uuid'].urn.split(':')[-1]
 
-    game_state = generate_report(new_room_uuid)
+    # game_state = generate_report(new_room_uuid)
 
-    return game_state
+    return {'room_uuid': new_room_uuid, 'nickname': nickname}
 
-def join_room(nickname, room_id) -> dict:
+def join_room(nickname, room_uuid) -> dict:
     '''Создает пользователя если необходимо, проверяет существование комнаты
     создает результат для подключающегося пользователя. Возвращает словарь
     основных параметров игры для передачи его фронту.
     '''
     # Получаем комнату по uuid
-    room = Room.query.filter_by(id=room_id).first()
+    room = Room.query.filter_by(room_uuid=room_uuid).first()
     
     # Проверка на существование комнаты
-    room_exist = bool(room)
-    if not room_exist:
+    if not bool(room):
         raise RoomDoesNotExist('This room does not exist in database')
 
     # Создаем пользователя
@@ -416,11 +415,13 @@ def join_room(nickname, room_id) -> dict:
     # Инициализируем текущего активного игрока в комнате
     room.init_current_user()
 
-    new_room_uuid = room.room_uuid.urn.split(':')[-1]
+    room_uuid = room.room_uuid.urn.split(':')[-1]
 
-    game_state = generate_report(new_room_uuid)
+    # game_state = generate_report(new_room_uuid)
+    if new_result_id == None:
+        return {'room_uuid': room_uuid}
 
-    return game_state
+    return {'room_uuid': room_uuid, 'nickname': nickname}
 
 
 

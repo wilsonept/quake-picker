@@ -33,9 +33,10 @@ def create():
         start_game_params = form.convert_data(**form_data)
 
         # Начинаем игру с создания пользователя, комнаты и результата игрока
-        game_state = start_game(**start_game_params)
+        params = start_game(**start_game_params)
 
-        return redirect(url_for('room', room_uuid=game_state['room_uuid']))
+        return redirect(url_for('room', room_uuid=params['room_uuid'],
+                                nickname=params['nickname']))
 
     return render_template('create_form.html', form=form, errors=form.errors)
 
@@ -52,20 +53,37 @@ def join(room_uuid):
             if key != 'csrf_token' and key != 'submit':
                 form_data[key] = value
 
-        join_room_params = form.convert_data(**form_data)
-        join_room(**join_room_params)
+        # Конвертим полученные данные формы в необходимые для начала игры
+        # join_room_params = form.convert_data(**form_data)
 
+        # Подключаемся к комнате, создавая пользователя и его результата
+        params = join_room(**form_data)
 
-        return redirect(url_for('room', room_uuid=room_uuid))
+        if not 'nickname' in params:
+            return redirect(url_for('room', room_uuid=params['room_uuid']))
+
+        return redirect(url_for('room', room_uuid=params['room_uuid'],
+                                nickname=params['nickname']))
     else:
         return render_template('join_form.html', form=form, errors=form.errors,
                                room_uuid=room_uuid)
 
 
-@app.route("/<room_uuid>/room", methods=['GET', 'POST'])
-def room(room_uuid):
+@app.route("/<string:room_uuid>")
+@app.route("/<string:room_uuid>/<string:nickname>", methods=['GET'])
+def room(room_uuid, **kwargs):
     ''' Основная страница выбора, она же комната '''
-    return render_template('room.html', room_uuid=room_uuid)
+
+    game_state = generate_report(room_uuid)
+
+    if not 'nickname' in kwargs.keys():
+        is_active = False
+        return render_template('room.html', room_uuid=room_uuid,
+                               game_state=game_state, is_active=is_active)
+
+    is_active = True
+    return render_template('room.html', room_uuid=room_uuid,
+                           game_state=game_state, is_active=is_active)
 
 
 
