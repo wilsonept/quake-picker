@@ -1,6 +1,9 @@
+import random
 from flask_wtf import FlaskForm
 from wtforms import SelectField, StringField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, AnyOf
+
+from database import Game_mode, Bo_type, Room
 
 
 
@@ -22,10 +25,52 @@ class CreateForm(FlaskForm):
     submit = SubmitField(label="Submit")
 
     
+    def convert_data(self, game_mode, bo_type, seed, nickname) -> dict:
+        '''Конвертирует полученные строчные данные в id'шники
+        Принимает на вход строковые значения:
+            * game_mode
+            * bo_type
+            * seed
+        Возвращает словарь id:
+            * game_mode_id
+            * bo_type_id
+            * seed
+            NOTE seed указывает на team_id
+        '''
+        # game_mode = kwargs["game_mode"]
+        # bo_type = kwargs["bo_type"]
+        # seed = kwargs["seed"]
+        # nickname = kwargs["nickname"]
+
+        game_mode_id = Game_mode.query.filter_by(name=game_mode).first().id
+        bo_type_id = Bo_type.query.filter_by(name=bo_type).first().id
+
+        if seed == 'Opponent':
+            seed = 2
+        elif seed == 'You':
+            seed = 1
+        else:
+            seed = random.choice([1,2])
+
+        return  {
+            'nickname': nickname,
+            'game_mode_id': game_mode_id,
+            'bo_type_id': bo_type_id,
+            'seed': seed
+        }
+    
 class JoinForm(FlaskForm):
     nickname = StringField(label=u"Nickname", validators=[DataRequired()])
     submit = SubmitField(label="Submit")
 
+    def convert_data(self, room_uuid, nickname) -> dict:
+
+        # room_uuid = kwargs["room_uuid"]
+        # nickname = kwargs["nickname"]
+
+        room_id = Room.query.filter_by(room_uuid=room_uuid).first().id
+
+        return {"room_id": room_id, "nickname": nickname}
 
 # TODO Убрать label, за ненадобностью?
 class MapsForm(FlaskForm):

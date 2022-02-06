@@ -1,5 +1,4 @@
 import random
-import json
 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import text as sa_text
@@ -13,6 +12,10 @@ from application import _DB as db
 
 # TODO Привести в порядок свойства отношений моделей. Что бы названия
 # соответствовали типам связей между таблицами.
+
+''' TODO Продумать логику методов в классах. Пришла мысль о том что методы
+создания результата логичнее расположить внутри класса Room.
+'''
 
 
 # ------ Модели ---------------------------------------------------------------
@@ -107,14 +110,14 @@ class Room(db.Model):
         return requested_room
 
     @classmethod
-    def create_room(cls, game_mode, bo_type, seed) -> dict:
+    def create_room(cls, game_mode_id, bo_type_id, seed) -> dict:
         '''Создает комнату в таблице rooms и возвращает словарь содержащий
         id и uuid комнаты. На вход принимает только int
         '''
 
         room_params = {
-            "game_mode_id": game_mode,
-            "bo_type_id": bo_type,
+            "game_mode_id": game_mode_id,
+            "bo_type_id": bo_type_id,
             "seed": seed,
             # TODO Поля ниже должны заполнятся на основе конфига или класса
             # который описывает определенные game_mod'ы и bo_typ'ы
@@ -134,14 +137,13 @@ class Room(db.Model):
             raise
         return {'id': new_room.id, 'uuid': new_room.room_uuid}
 
-    @classmethod
-    def init_current_user(cls):
+    def init_current_user(self):
         '''Создает запись активного игрока в комнате.'''
 
         try:
-            for result in cls.rel_results:
-                if result.team_id == cls.seed:
-                    cls.current_user_id = result.user_id
+            for result in self.rel_results:
+                if result.team_id == self.seed:
+                    self.current_user_id = result.user_id
                     db.session.commit()
                     break
         except:
@@ -195,8 +197,11 @@ class Result(db.Model):
         '''Создает результат в таблице results и
         возвращает id результата.
         '''
-        # TODO Проверяем заполнена ли комната
-        # в случае если комната заполнена, выбрасываем какую то ошибку...
+
+        # Проверка на заполненость комнаты
+        results = cls.query.filter_by(room_id=room_id).all()
+        if len(results) > 1:
+            return cls.query.filter_by(room_id=room_id, user_id=user_id).first()
 
         result_params = {
             "user_id": user_id,
@@ -372,62 +377,50 @@ class Team(db.Model):
 
 # ------ Функции основные -----------------------------------------------------
 
-def start_game(nickname, game_mode, bo_type, seed) -> dict:
+def start_game(nickname, game_mode_id, bo_type_id, seed) -> dict:
     ''' Создает пользователя если необходимо, создает комнату и результат
     для пользователя создавшего комнату. Возвращает словарь основных
     параметров игры для передачи его фронту.
     '''
     new_user_id = User.create_user(nickname)
-    new_room = Room.create_room(game_mode, bo_type, seed)
+    new_room = Room.create_room(game_mode_id, bo_type_id, seed)
     new_result_id = Result.create_result(new_user_id, new_room['id'], team_id=1)
-    game_params = {
-        'nickname': nickname,
-        'user_id': new_user_id,
-        'room_uuid': new_room['uuid'],
-        'game_mode': game_mode,
-        'bo_type': bo_type,
-        'seed': seed,
-        'result_id': new_result_id,
-        'map_picks': [],
-        'map_bans': [],
-        'champ_picks': [],
-        'cahmp_bans': []
-    }
-    return game_params
+    
+    # Забираем из типа UUID только строковое представление этого uuid
+    new_room_uuid = new_room['uuid'].urn.split(':')[-1]
 
-def join_room(nickname, room_uuid) -> dict:
+    game_state = generate_report(new_room_uuid)
+
+    return game_state
+
+def join_room(nickname, room_id) -> dict:
     '''Создает пользователя если необходимо, проверяет существование комнаты
     создает результат для подключающегося пользователя. Возвращает словарь
     основных параметров игры для передачи его фронту.
     '''
+    # Получаем комнату по uuid
+    room = Room.query.filter_by(id=room_id).first()
+    
     # Проверка на существование комнаты
-    room_exist = bool(Room.query.filter_by(room_uuid=room_uuid).first())
+    room_exist = bool(room)
     if not room_exist:
         raise RoomDoesNotExist('This room does not exist in database')
 
     # Создаем пользователя
     new_user_id = User.create_user(nickname=nickname)
     
-    # Получаем комнату по uuid
-    room = Room.query.filter_by(room_uuid=room_uuid).first()
-    
     # Создаем результат подключающегося пользователя
     # NOTE будет работать только при условии что команд всего две.
     new_result_id = Result.create_result(new_user_id, room.id, team_id=2)
     
     # Инициализируем текущего активного игрока в комнате
-    Room.init_current_user()
+    room.init_current_user()
 
-    # Готовим вывод
-    game_params = {
-        'nickname': nickname,
-        'user_id': new_user_id,
-        # TODO Сделать так что бы seed в таблице могло принимать значения
-        # только 1, 2. Где 1 это синие, 2 это красные.
-        'seed': room.seed,
-        'result_id': new_result_id
-    }
-    return game_params
+    new_room_uuid = room.room_uuid.urn.split(':')[-1]
+
+    game_state = generate_report(new_room_uuid)
+
+    return game_state
 
 
 
@@ -477,18 +470,22 @@ def generate_report(room_uuid):
     current_game_state = {}
     for result in results:
         player_state['nickname'] = result.rel_users.nickname
-        player_state['map_picks'] = [
-            obj for obj in result.map_picks
-        ]
-        player_state['map_bans'] = [
-            obj for obj in result.map_bans
-        ]
-        player_state['champ_picks'] = [
-            obj for obj in result.champ_picks
-        ]
-        player_state['champ_bans'] = [
-            obj for obj in result.champ_bans
-        ]
+        if result.map_picks != None:
+            player_state['map_picks'] = [
+                obj for obj in result.map_picks
+            ]
+        if result.map_bans != None:
+            player_state['map_bans'] = [
+                obj for obj in result.map_bans
+            ]
+        if result.champ_picks != None:
+            player_state['champ_picks'] = [
+                obj for obj in result.champ_picks
+            ]
+        if result.champ_bans != None:
+            player_state['champ_bans'] = [
+                obj for obj in result.champ_bans
+            ]
         player_states.append(player_state)
         player_state = {}
 
@@ -510,7 +507,7 @@ def generate_report(room_uuid):
     else:
         current_game_state['current_player'] = ''
 
-    return json.dumps(current_game_state)
+    return current_game_state
 
 
 class IJoinForm():
@@ -524,35 +521,3 @@ class IJoinForm():
     
     def __repr__(self):
         return self.room_id
-
-
-class ICreateForm():
-    '''Интерфейс формы создания комнаты
-    Принимает на вход строковые значения:
-        * game_mode
-        * bo_type
-        * seed
-    Возвращает словарь id:
-        * game_mode_id
-        * bo_type_id
-        * seed
-        NOTE seed указывает на team_id
-    '''
-
-    def __init__(self, game_mode, bo_type, seed):
-        self.game_mode_id = Game_mode.query.filter_by(name=game_mode).first().id
-        self.bo_type_id = Bo_type.query.filter_by(name=bo_type).first().id
-
-        if seed == 'Opponent':
-            self.seed = 2
-        elif seed == 'You':
-            self.seed = 1
-        else:
-            self.seed = random.choice([1,2])
-    
-    def __repr__(self):
-        return {
-            'game_mode_id': self.game_mode_id,
-            'bo_type_id': self.bo_type_id,
-            'seed': self.seed
-        }

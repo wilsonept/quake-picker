@@ -1,11 +1,12 @@
 import random
+import json
 
 from flask import jsonify, render_template, url_for, redirect, request
 
 from application import app
 from forms import CreateForm, JoinForm, MapsForm
 from application import _JSONRPC as jsonrpc
-from database import Room, Result, generate_report, start_game
+from database import Room, Result, generate_report, start_game, join_room
 
 
 
@@ -23,21 +24,18 @@ def create():
     form = CreateForm()
     if form.validate_on_submit():
         # Собираем необходимые данные из формы в словарь
-        start_game_params = {}
+        form_data = {}
         for key, value in request.form.items():
             if key != 'csrf_token' and key != 'submit':
-                start_game_params[key] = value
+                form_data[key] = value
 
-        game_params = start_game(**start_game_params)
-        
-        ''' TODO Функция start_game: должна создавать пользователя, комнату
-        и результат. Так же должна возвращать json со всеми значениями формы
-        для фронтенда.
-        '''
-        # return redirect(url_for('room', room_id=room_id, params=game_params))
-        
-        return redirect(url_for('room', room_uuid=game_params['room_uuid']),
-                                game_params=game_params)
+        # Конвертим полученные данные формы в необходимые для начала игры
+        start_game_params = form.convert_data(**form_data)
+
+        # Начинаем игру с создания пользователя, комнаты и результата игрока
+        game_state = start_game(**start_game_params)
+
+        return redirect(url_for('room', room_uuid=game_state['room_uuid']))
 
     return render_template('create_form.html', form=form, errors=form.errors)
 
@@ -47,8 +45,16 @@ def join(room_uuid):
     ''' Форма подключения к комнате '''
     form = JoinForm()
     if form.validate_on_submit():
+        # Собираем необходимые данные из формы в словарь
+        form_data = {}
+        form_data["room_uuid"] = room_uuid
+        for key, value in request.form.items():
+            if key != 'csrf_token' and key != 'submit':
+                form_data[key] = value
 
-        # TODO вставить функцию подключения к комнате
+        join_room_params = form.convert_data(**form_data)
+        join_room(**join_room_params)
+
 
         return redirect(url_for('room', room_uuid=room_uuid))
     else:
@@ -59,7 +65,7 @@ def join(room_uuid):
 @app.route("/<room_uuid>/room", methods=['GET', 'POST'])
 def room(room_uuid):
     ''' Основная страница выбора, она же комната '''
-    return render_template('results.html', room_uuid=room_uuid)
+    return render_template('room.html', room_uuid=room_uuid)
 
 
 
@@ -68,15 +74,18 @@ def room(room_uuid):
 
 @jsonrpc.method("app.getState", validate=False)
 def getState(room_uuid:str) -> str:
-    '''Возвращает текущее состояние игры на основе room_id и nickname'''
+    '''Возвращает текущее состояние игры на основе room_id и nickname
+    в JSON формате
+    '''
 
-    return generate_report(room_uuid)
+    return json.dumps(generate_report(room_uuid))
 
 
 @jsonrpc.method("app.updateState")
 def updateState(room_uuid:str, action:str, nickname:str, choice:str) -> str:
     '''Принимает выбор игрока, room_id, action, nickname, choice.
-    Возвращает json cо всем состоянием игры'''
+    Возвращает json cо всем состоянием игры
+    '''
     
     # Ищем комнату и активного игрока
     room = Room.get_room(room_uuid)
@@ -93,7 +102,7 @@ def updateState(room_uuid:str, action:str, nickname:str, choice:str) -> str:
 
     # Возвращаем состояние комнаты
     # TODO Разобраться как вызвать JSON-RPC роут по аналогии с redirect()
-    return generate_report(room_uuid)
+    return json.dumps(generate_report(room_uuid))
 
 
 
@@ -128,6 +137,7 @@ def picking_form():
 
 
 # ------ маршруты, для проверки работы с xhr запросами ------------------------
+
 @app.route("/state")
 def state():
     result = random.choice(['map', 'champ', 'result'])
