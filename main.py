@@ -10,6 +10,7 @@ from database import Room, Result, generate_report, start_game, join_room
 
 
 
+
 # ------ Маршруты APP ---------------------------------------------------------
 
 @app.route("/")
@@ -142,6 +143,9 @@ def champions(room_uuid):
 @app.route("/<uuid:room_uuid>/results")
 def results(room_uuid):
     ''' Страница результатов выбора '''
+
+    # TODO Если игра не окончена то redirect в комнату
+
     return render_template('results.html', room_uuid=room_uuid)
 
 

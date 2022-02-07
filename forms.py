@@ -42,6 +42,7 @@ class CreateForm(FlaskForm):
         # seed = kwargs["seed"]
         # nickname = kwargs["nickname"]
 
+        # TODO Разобраться как объединить все в один запрос.
         game_mode_id = Game_mode.query.filter_by(name=game_mode).first().id
         bo_type_id = Bo_type.query.filter_by(name=bo_type).first().id
 
