@@ -1,59 +1,69 @@
 {% extends "room.html" %}
 
 {% block content %}
-    <div class="card card-map">
+<div class="choice-wrapper-map">
+    <label id="molten" class="card card-map">
       <div class="card-image-wrapper">
-        <img class="card-image" src="https://dev.quake-champions.com/css/images/maps/the_molten_falls.jpg">
+        <img class="card-image" src="/static/images/maps/the_molten_falls.jpg">
       </div>
       <div class="card-outer-light"></div>
-    </div>
+      <input name="molten" type="checkbox">
+    </label>
     
-    <div class="card card-map">
+    <label id="ruins" class="card card-map">
       <div class="card-image-wrapper">
-        <img class="card-image" src="https://dev.quake-champions.com/css/images/maps/ruins_of_sarnath.jpg">
+        <img class="card-image" src="/static/images/maps/ruins_of_sarnath.jpg">
       </div>
       <div class="card-outer-light"></div>
-    </div>
+      <input name="ruins" type="checkbox">
+    </label>
     
-    <div class="card card-map">
+    <label id="vale" class="card card-map">
       <div class="card-image-wrapper">
-        <img class="card-image" src="https://dev.quake-champions.com/css/images/maps/vale_of_pnath.jpg">
+        <img class="card-image" src="/static/images/maps/vale_of_pnath.jpg">
       </div>
       <div class="card-outer-light"></div>
-    </div>
+      <input name="vale" type="checkbox">
+    </label>
 
-    <div class="card card-map">
+    <label id="awoken" class="card card-map">
       <div class="card-image-wrapper">
-        <img class="card-image" src="https://dev.quake-champions.com/css/images/maps/awoken.jpg">
+        <img class="card-image" src="/static/images/maps/awoken.jpg">
       </div>
       <div class="card-outer-light"></div>
-    </div>
+      <input name="awoken" type="checkbox">
+    </label>
+
+    <label id="corrupted" class="card card-map">
+      <div class="card-image-wrapper">
+        <img class="card-image" src="/static/images/maps/corrupted_keep.jpg">
+      </div>
+      <div class="card-outer-light"></div>
+      <input name="corrupted" type="checkbox">
+    </label>
+
+    <label id="exile" class="card card-map">
+      <div class="card-image-wrapper">
+        <img class="card-image" src="/static/images/maps/exile.jpg">
+      </div>
+      <div class="card-outer-light"></div>
+      <input name="exile" type="checkbox">
+    </label>
     
-    <div class="card card-map">
+    <label id="none" class="card card-map invisible">
       <div class="card-image-wrapper">
-        <img class="card-image" src="https://dev.quake-champions.com/css/images/maps/corrupted_keep.jpg">
+        <img class="card-image" src="#">
       </div>
       <div class="card-outer-light"></div>
-    </div>
-    
-    <div class="card card-map">
+      <input name="none" type="checkbox">
+    </label>
+
+    <label id="deep" class="card card-map">
       <div class="card-image-wrapper">
-        <img class="card-image" src="https://dev.quake-champions.com/css/images/maps/exile.jpg">
+        <img class="card-image" src="/static/images/maps/deep_embrace.jpg">
       </div>
       <div class="card-outer-light"></div>
-    </div>
-    
-    <div class="card card-map invisible">
-      <div class="card-image-wrapper">
-        <img class="card-image" src="https://dev.quake-champions.com/css/images/maps/deep_embrace.jpg">
-      </div>
-      <div class="card-outer-light"></div>
-    </div>
-    
-    <div class="card card-map">
-      <div class="card-image-wrapper">
-        <img class="card-image" src="https://dev.quake-champions.com/css/images/maps/deep_embrace.jpg">
-      </div>
-      <div class="card-outer-light"></div>
-    </div>
+      <input name="deep" type="checkbox">
+    </label>
+</div>
 {% endblock %}

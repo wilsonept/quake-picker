@@ -37,10 +37,6 @@ class CreateForm(FlaskForm):
             * seed
             NOTE seed указывает на team_id
         '''
-        # game_mode = kwargs["game_mode"]
-        # bo_type = kwargs["bo_type"]
-        # seed = kwargs["seed"]
-        # nickname = kwargs["nickname"]
 
         # TODO Разобраться как объединить все в один запрос.
         game_mode_id = Game_mode.query.filter_by(name=game_mode).first().id

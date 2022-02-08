@@ -1,7 +1,5 @@
-import random
-
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import ForeignKey, text as sa_text
+from sqlalchemy import text
 
 from exceptions import RoomDoesNotExist
 from application import _DB as db
@@ -13,13 +11,17 @@ from application import _DB as db
 # TODO Привести в порядок свойства отношений моделей. Что бы названия
 # соответствовали типам связей между таблицами.
 
-''' TODO Заполнить таблицу правилами 2v2.'''
-
-''' TODO Начать писать фронт... что бы это не значило.'''
-
 ''' TODO Продумать логику методов в классах. Пришла мысль о том что методы
 создания результата логичнее расположить внутри класса Room.
 '''
+
+''' TODO Покрыть модели тестами'''
+
+''' TODO Начать писать фронт... что бы это не значило.'''
+
+''' TODO Заполнить таблицу правилами 2v2.'''
+
+
 
 
 # ------ Модели ---------------------------------------------------------------
@@ -79,22 +81,13 @@ class Room(db.Model):
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
     room_uuid = db.Column(UUID(as_uuid=True), nullable=True,
-                          server_default=sa_text("uuid_generate_v4()")) 
+                          server_default=text("uuid_generate_v4()")) 
     current_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
                                 nullable=True)
     current_step_id = db.Column(db.Integer, db.ForeignKey('rules.id'),
                                 nullable=False)
     seed = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=False)
-    # bo_type_id = db.Column(db.Integer,db.ForeignKey('bo_types.id'),
-    #                        nullable=False)
-    # game_mode_id = db.Column(db.Integer,db.ForeignKey('game_modes.id'),
-    #                          nullable=False)
-    # current_action_id = db.Column(db.Integer, db.ForeignKey('actions.id'),
-    #                               nullable=False, default = 4)
 
-    # rel_game_modes = db.relationship("Game_mode", back_populates="rel_rooms")
-    # rel_bo_types = db.relationship("Bo_type", back_populates="rel_rooms")
-    # rel_actions = db.relationship("Action", back_populates="rel_rooms")
     rel_results = db.relationship("Result", back_populates="rel_rooms")
     rel_rules = db.relationship("Rule", back_populates="rel_rooms")
     rel_users = db.relationship("User", back_populates="rel_rooms")
@@ -123,10 +116,7 @@ class Room(db.Model):
                              bo_type_id=bo_type_id, step=1).first()
 
         room_params = {
-            # "game_mode_id": game_mode_id,
-            # "bo_type_id": bo_type_id,
             "seed": seed,
-            # "current_action_id": rule.action_id,
             "current_step_id": rule.id
         }
 
@@ -292,10 +282,7 @@ class Rule(db.Model):
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                     autoincrement=True)
-
-    # Порядковый номер шага игры
-    step = db.Column(db.Integer, nullable=False)
-
+    step = db.Column(db.Integer, nullable=False) # Порядковый номер шага игры
     game_mode_id = db.Column(db.Integer, db.ForeignKey('game_modes.id'),
                              nullable=False)
     bo_type_id = db.Column(db.Integer, db.ForeignKey('bo_types.id'),
@@ -324,7 +311,6 @@ class Action(db.Model):
                    autoincrement=True)
     name = db.Column(db.String(30), nullable=False)
 
-    # rel_rooms = db.relationship("Room", back_populates="rel_actions")
     rel_rules = db.relationship("Rule", back_populates="rel_actions")
 
 
@@ -338,7 +324,6 @@ class Bo_type(db.Model):
                    autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
-    # rel_rooms = db.relationship("Room", back_populates="rel_bo_types")
     rel_rules = db.relationship("Rule", back_populates="rel_bo_types")
 
 
@@ -364,7 +349,6 @@ class Game_mode(db.Model):
     name = db.Column(db.String(40), nullable=False)
     player_count = db.Column(db.Integer, nullable=False, unique=False)
 
-    # rel_rooms = db.relationship("Room", back_populates="rel_game_modes")
     rel_rules = db.relationship("Rule", back_populates="rel_game_modes")
 
 
@@ -427,8 +411,6 @@ def start_game(nickname, game_mode_id, bo_type_id, seed) -> dict:
     # Забираем из типа UUID только строковое представление этого uuid
     new_room_uuid = new_room['uuid'].urn.split(':')[-1]
 
-    # game_state = generate_report(new_room_uuid)
-
     return {'room_uuid': new_room_uuid, 'nickname': nickname}
 
 def join_room(nickname, room_uuid) -> dict:
@@ -455,7 +437,6 @@ def join_room(nickname, room_uuid) -> dict:
 
     room_uuid = room.room_uuid.urn.split(':')[-1]
 
-    # game_state = generate_report(new_room_uuid)
     if new_result_id == None:
         return {'room_uuid': room_uuid}
 
@@ -485,14 +466,6 @@ def delete_room(room_uuid):
     room.delete_room(room_uuid=room_uuid)
     return True
 
-#req = engine.execute("select * from users")
-#for r in req:
-#    print(r)
-
-# user = User.get_user('wilson')
-# room = Room.get_room('dc3ad9c1-7452-40b6-99a1-e98ddc18a31e')
-# result = Result.get_result(1)
-# pass
 
 def generate_report(room_uuid):
     '''Генерируем полный отчет о состоянии игры в JSON формате'''

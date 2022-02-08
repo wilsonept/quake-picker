@@ -54,9 +54,6 @@ def join(room_uuid):
             if key != 'csrf_token' and key != 'submit':
                 form_data[key] = value
 
-        # Конвертим полученные данные формы в необходимые для начала игры
-        # join_room_params = form.convert_data(**form_data)
-
         # Подключаемся к комнате, создавая пользователя и его результата
         params = join_room(**form_data)
 
@@ -134,7 +131,7 @@ def maps(room_uuid):
     return render_template('maps.html', room_uuid=room_uuid)
 
 
-@app.route("/<uuid:room_uuid>/champions")
+@app.route("/<uuid:room_uuid>/champs")
 def champions(room_uuid):
     ''' Страница результатов выбора '''
     return render_template('champions.html', room_uuid=room_uuid)

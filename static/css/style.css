@@ -4,14 +4,16 @@
 :root {
     font-size: 1rem;
     --clr-bg: rgb(28, 22, 29);
-    --grd-gold: linear-gradient(-45deg, #EB6E2F 40%, #F9BA2F 60%, #EB6E2F);
+    --grd-gold: linear-gradient(-45deg, #EB6E2F 40%, #F9BA2F 60%, #EB6E2F 70%);
     --grd-light: linear-gradient(to bottom, transparent 0%, #FD4023 30% 70%, transparent 100%);
+    --grd-picked: linear-gradient(-45deg, #12A390 40%, #31EFD5 60%, #12A390 70%);
+    --grd-banned: linear-gradient(-45deg,  #B02710 40%, #FF513F 60%, #B02710 70%);
     --champ-height: 150px;
     --champ-width: 100px;
     --border-thin: 1px;
-    --border-thick: 3px;
-    --map-height: 8rem;
-    --map-width: 12rem;
+    --border-thick: 1px;
+    --map-height: 128px;
+    --map-width: 192px;
 }
 
 * {
@@ -70,12 +72,14 @@ body {
 /* ----------------- Чемпионы и Карты -----------------*/
 
 /* TODO данный блок должен изменяться в зависимости от этапа выбора силами JS */
-.choice-wrapper {
+.choice-wrapper-champ {
     display: grid;
-    /* display: flex; строка отображения результатов */
-    /* flex-direction: column; строка отображения результатов */
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    justify-content: center;
+}
+.choice-wrapper-map {
+    display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    /* grid-template-columns: 1fr 1fr 1fr 1fr; Строка для выбора чемпионов */
     justify-content: center;
 }
 
@@ -116,26 +120,28 @@ body {
 что бы корректно позиционировать в нем absolute блоки.
 Фиксированный размер нужен что бы при изменении размеров
 внутренних блоков не сдвигались соседи.*/
+/*  основной блок карточки, необходим для того 
+что бы корректно позиционировать в нем absolute блоки.
+Фиксированный размер нужен что бы при изменении размеров
+внутренних блоков не сдвигались соседи.*/
 .card {
+    cursor: pointer; 
     margin: 10px;
     position: relative;
-}
-
-.card-champ {
+  }
+  .card-champ {
     height: var(--champ-height);
-    width: calc(var(--champ-width) + var(--border-thick) * 2);
-}
-
-.card-map {
+    width: var(--champ-width);
+  }
+  .card-map {
     height: var(--map-height);
-    width: calc(var(--map-width) + var(--border-thick) * 2);
-}
-
-/* данный блок делает основную магию, он выступает 
+    width: var(--map-width);
+  }
+  /* данный блок делает основную магию, он выступает 
   в качестве обертки изображения со слегка большим
   размером чем у вложенного изображения.
   Благодаря этому мы имитируем рамку вокруг картинки. */
-.card-image-wrapper {
+  .card-image-wrapper {
     margin: auto;
     display: flex;
     position: relative;
@@ -143,40 +149,36 @@ body {
     justify-content: center;
     transition: all .1s ease;
     overflow: hidden;
-}
-
-.card-champ .card-image-wrapper {
+  }
+  .card-champ .card-image-wrapper {
     height: var(--champ-height);
     width: var(--champ-width);
-}
-
-.card-map .card-image-wrapper {
+  }
+  .card-map .card-image-wrapper {
     height: var(--map-height);
     width: var(--map-width);
-}
-
-/* блок изображения */
-.card-image {
+  }
+  
+  /* блок изображения */
+  .card-image {
     position: absolute;
     object-fit: cover;
     z-index: 10;
-}
-
-.card-champ .card-image {
+  }
+  .card-champ .card-image {
     height: calc(var(--champ-height) - var(--border-thin) * 2);
     width: calc(var(--champ-width) - var(--border-thin) * 2);
-}
-
-.card-map .card-image {
+  }
+  .card-map .card-image {
     height: calc(var(--map-height) - var(--border-thin) * 2);
     width: calc(var(--map-width) - var(--border-thin) * 2);
-}
-
-/* блок для назначения цвета нашей имитированной рамки 
+  }
+  
+  /* блок для назначения цвета нашей имитированной рамки 
   вокруг изображения. Он сделан значительно больше
   основного блока что бы при анимировании вращения
   он полностью покрывал карточку */
-.card-image-wrapper::before {
+  .card-image-wrapper::before {
     position: absolute;
     content: "";
     top: -40%;
@@ -185,26 +187,26 @@ body {
     bottom: -40%;
     transition: all .1s ease;
     background: #555;
-}
-
-/* блок внутреннего свечения рамки,
+  }
+  
+  /* блок внутреннего свечения рамки,
   активируется в активных состояниях */
-.card-image-wrapper::after {
+  .card-image-wrapper::after {
     position: absolute;
     content: "";
-    top: var(--border-thick);
-    left: var(--border-thick);
-    right: var(--border-thick);
-    bottom: var(--border-thick);
+    top: calc(var(--border-thick) * 2.5);
+    left: calc(var(--border-thick) * 2.5);
+    right: calc(var(--border-thick) * 2.5);
+    bottom: calc(var(--border-thick) * 2.5);
     transition: all .1s ease;
     box-shadow: inset 0 0 10px #EB6E2F;
     opacity: 0;
     z-index: 100;
-}
-
-/* блок света позади карточки,
+  }
+  
+  /* блок света позади карточки,
   активируется в активных состояниях */
-.card-outer-light {
+  .card-outer-light {
     position: absolute;
     pointer-events: none;
     top: -30px;
@@ -213,96 +215,186 @@ body {
     background: var(--grd-light);
     opacity: 0;
     z-index: -1;
-}
-
-
-/* ------------------------------- */
-/* состояния наведения мышью */
-.card-image-wrapper:hover::before {
+  }
+  
+  /* прячем чекбокс */
+  input[type="checkbox"] {
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+  }
+  
+  /* ------------------------------- */
+  /* состояния наведения мышью */
+  .card-image-wrapper:hover::before {
     background: white;
-}
-
-/* при наведении на карточку, увеличить только обертку и ее содержимое.
+  }
+  /* при наведении на карточку, увеличить только обертку и ее содержимое.
   нужно что бы свет на заднем плане не изменял своего размера.*/
-.card:hover .card-image-wrapper {
+  .card:hover .card-image-wrapper {
     transform: scale(1.2);
     z-index: 100;
-}
-
-.card:hover.card-champ .card-image-wrapper {
-    height: calc(var(--champ-height) + var(--border-thick) * 2);
-    width: calc(var(--champ-width) + var(--border-thick) * 2);
-}
-
-.card:hover.map-champ .card-image-wrapper {
-    height: calc(var(--map-height) + var(--border-thick) * 2);
-    width: calc(var(--map-width) + var(--border-thick) * 2);
-}
-
-/* ------------------------------- */
-/* активные состояния */
-/* меняем цвет рамки на активный и включаем анимацию */
-.card-image-wrapper:focus::before,
-.card-image-wrapper:active::before {
+  }
+  /* так же при наведении на карточку уменьшем размер картинки что бы
+  визуально увеличить рамку */
+  .card-champ:hover img {
+    height: calc(var(--champ-height) - var(--border-thick) * 6);
+    width: calc(var(--champ-width) - var(--border-thick) * 6);
+  }
+  .card-map:hover img {
+    height: calc(var(--map-height) - var(--border-thick) * 6);
+    width: calc(var(--map-width) - var(--border-thick) * 6);
+  }
+  
+  /* ------------------------------- */
+  /* активные состояния */
+  /* меняем цвет рамки на активный и включаем анимацию */
+  .card-image-wrapper:focus::before,
+  .card-image-wrapper:active::before {
     background: var(--grd-gold);
     box-shadow: 0 0 10px #EB6E2F;
     animation: border-highlight 2s linear infinite;
-}
-
-/* включаем внутреннее свечение */
-.card-image-wrapper:focus::after,
-.card-image-wrapper:active::after {
+  }
+  
+  /* включаем внутреннее свечение */
+  .card-image-wrapper:focus::after,
+  .card-image-wrapper:active::after {
     opacity: 1;
-}
-
-/* включаем свет позади карточки */
-.card-image-wrapper:focus~.card-outer-light,
-.card-image-wrapper:active~.card-outer-light {
+  }
+  
+  /* включаем свет позади карточки */
+  .card-image-wrapper:focus ~ .card-outer-light,
+  .card-image-wrapper:active ~ .card-outer-light {
     opacity: 1;
-}
-
-/* ------------------------------- */
-/* состояния когда карточка выбрана и активна */
-/* увеличиваем рамку и включаем анимацию свечения рамки */
-.card-active {
-    animation: outer-glow 2s ease-in-out infinite;
-}
-
-.card-champ .card-active {
-    height: calc(var(--champ-height) + var(--border-thick) * 2);
-    width: calc(var(--champ-width) + var(--border-thick) * 2);
-}
-
-.card-map .card-active {
-    height: calc(var(--map-height) + var(--border-thick) * 2);
-    width: calc(var(--map-width) + var(--border-thick) * 2);
-}
-
-/* включаем анимацию света позади карточки */
-.card-active~.card-outer-light {
+  }
+  
+  /* ------------------------------- */
+  /* состояния когда карточка выбрана и активна */
+  /* увеличиваем рамку путем уменьшения картинкии */
+  .card-active.card-champ img {
+    height: calc(var(--champ-height) - var(--border-thick) * 6);
+    width: calc(var(--champ-width) - var(--border-thick) * 6);
+  }
+  .card-active.card-map img {
+    height: calc(var(--map-height) - var(--border-thick) * 6);
+    width: calc(var(--map-width) - var(--border-thick) * 6);
+  }
+  
+  /* включаем анимацию свечения увеличенной рамки */
+  .card-active .card-image-wrapper {
+    animation: outer-glow-active 2s ease-in-out infinite;
+  }
+  
+  /* включаем анимацию света позади карточки */
+  .card-active .card-outer-light {
     animation: outer-light 2s ease-out infinite;
-}
-
-/* включаем внутреннее свечение */
-.card-active::after {
+  }
+  
+  /* включаем внутреннее свечение */
+  .card-active .card-image-wrapper::after {
     opacity: 1;
-}
-
-/* красим рамку в активный цвет и включаем анимацию рамки */
-.card-active::before {
+  }
+  
+  /* красим рамку в активный цвет и включаем анимацию рамки */
+  .card-active .card-image-wrapper::before {
     background: var(--grd-gold);
     animation: border-highlight 3s ease-in-out infinite;
-}
-
-/* увеличиваем активную карточку при наведении не меняя цвета на белый */
-.card:hover .card-active::before {
+  }
+  
+  /* ------------------------------- */
+  /* состояния banned и picked */
+  
+  /* отключаем эффекты наведения курсором */
+  .card-picked,
+  .card-banned {
     pointer-events: none;
-    background: var(--grd-gold);
-}
-
-.invisible {
+  }
+  
+  /* делаем изображение менее ярким */
+  .card-picked img,
+  .card-banned img {
+    filter: grayscale(0.7);
+  }
+  
+  /* делаем рамку тонкой */
+  .card-picked .card-image-wrapper::after,
+  .card-banned .card-image-wrapper::after {
+    top: var(--border-thin);
+    left: var(--border-thin);
+    right: var(--border-thin);
+    bottom: var(--border-thin);
+  /*   транзишны под вопросом, мб они и не нужны */
+    transition: all .1s ease;
+  }
+  
+  /* Включаем анимацию свечения рамки.
+  Анимации разные, так как содержат в себе цвета */
+  .card-picked .card-image-wrapper {
+    animation: outer-glow-picked 2s ease-in-out infinite;
+  }
+  .card-banned .card-image-wrapper {
+    animation: outer-glow-banned 2s ease-in-out infinite;
+  }
+  
+  /* задаем цвет внутреннего свечения */
+  .card-banned .card-image-wrapper::after {
+    box-shadow: inset 0 0 10px #B02710;
+  }
+  .card-picked .card-image-wrapper::after {
+    box-shadow: inset 0 0 10px #008071;
+  }
+  
+  /* включаем внутреннее свечение */
+  .card-picked .card-image-wrapper::after,
+  .card-banned .card-image-wrapper::after {
+    opacity: 1;
+  }
+  
+  /* красим рамку в нужный цвет */
+  .card-picked .card-image-wrapper::before {
+    background: var(--grd-picked);
+  }
+  .card-banned .card-image-wrapper::before {
+    background: var(--grd-banned);
+  }
+  
+  /* включаем анимацию рамки */
+  .card-picked .card-image-wrapper::before,
+  .card-banned .card-image-wrapper::before {
+    animation: border-highlight 3s ease-in-out infinite;
+  }
+  
+  .invisible {
     visibility: hidden;
-}
+  }
+
+
+  /* Анимации */
+  @keyframes border-highlight {
+      from { transform: none; }   
+      to { transform: rotate(360deg); }
+  }
+  @keyframes outer-glow-active {
+    0% {box-shadow: 0 0 10px #EB6E2F;}
+    50% {box-shadow: 0 0 12px #EB6E2F;}
+    100% {box-shadow: 0 0 10px #EB6E2F;}
+  }
+  @keyframes outer-glow-picked {
+    0% {box-shadow: 0 0 10px #008071;}
+    50% {box-shadow: 0 0 12px #008071;}
+    100% {box-shadow: 0 0 10px #008071;}
+  }
+  @keyframes outer-glow-banned {
+    0% {box-shadow: 0 0 10px #B02710;}
+    50% {box-shadow: 0 0 12px #B02710;}
+    100% {box-shadow: 0 0 10px #B02710;}
+  }
+  
+  @keyframes outer-light {
+      0% { opacity: 1; }   
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }   
+  }
 
 /* ----------------- Игроки -----------------*/
 .player-card {
