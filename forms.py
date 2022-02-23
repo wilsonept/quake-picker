@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import SelectField, StringField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, AnyOf
 
-from database import Game_mode, Bo_type, Room
+from database import Game_mode, Bo_type, Room, Rule
 
 
 
@@ -11,10 +11,10 @@ from database import Game_mode, Bo_type, Room
 # ------ Формы ----------------------------------------------------------------
 
 class CreateForm(FlaskForm):
-    game_modes = ["duel", "tdm"]
+    game_modes = ["duel"]
     game_mode = SelectField(label=u"Game Mode", choices=game_modes,
                             validators=[DataRequired(), AnyOf(game_modes)])
-    bo_types = ["bo3", "bo1", "bo5", "bo7"]
+    bo_types = ["bo3"]
     bo_type = SelectField(label=u"Game Mode", choices=bo_types,
                           validators=[DataRequired(), AnyOf(bo_types)])
     nickname = StringField(label=u"Nickname",
@@ -24,7 +24,6 @@ class CreateForm(FlaskForm):
                        validators=[DataRequired(), AnyOf(seeds)])
     submit = SubmitField(label="Submit")
 
-    # TODO Попробовать реализовать через класс IFormConverter
     def convert_data(self, game_mode, bo_type, seed, nickname) -> dict:
         '''Конвертирует полученные строчные данные в id'шники
         Принимает на вход строковые значения:
@@ -39,8 +38,19 @@ class CreateForm(FlaskForm):
         '''
 
         # TODO Разобраться как объединить все в один запрос.
+        '''
+        SELECT game_modes.id as gmid, bo_types.id as btid, rules.id as rid
+        FROM game_modes 
+        CROSS JOIN bo_types
+        CROSS JOIN rules
+        WHERE game_modes.id=1 and bo_types.id=1 and rules.step=1;
+        '''
         game_mode_id = Game_mode.query.filter_by(name=game_mode).first().id
         bo_type_id = Bo_type.query.filter_by(name=bo_type).first().id
+        # Находим первый шаг в правилах по выбранным game_mode и bo_type
+        current_step_id = Rule.query.filter_by(game_mode_id=game_mode_id,
+                                    bo_type_id=bo_type_id, step=1).first().id
+
 
         if seed == 'Opponent':
             seed = 2
@@ -51,33 +61,12 @@ class CreateForm(FlaskForm):
 
         return  {
             'nickname': nickname,
-            'game_mode_id': game_mode_id,
-            'bo_type_id': bo_type_id,
-            'seed': seed
+            # 'game_mode_id': game_mode_id,
+            # 'bo_type_id': bo_type_id,
+            'seed': seed,
+            'current_step_id': current_step_id
         }
     
 class JoinForm(FlaskForm):
     nickname = StringField(label=u"Nickname", validators=[DataRequired()])
-    submit = SubmitField(label="Submit")
-
-    # TODO Попробовать реализовать через класс IFormConverter
-    # NOTE Если в форме заполняется только nickname то эта функция не нужна!!!
-    def convert_data(self, room_uuid, nickname) -> dict:
-        room_id = Room.query.filter_by(room_uuid=room_uuid).first().id
-        return {"room_id": room_id, "nickname": nickname}
-
-# TODO Убрать label, за ненадобностью?
-class MapsForm(FlaskForm):
-    map01 = BooleanField(label='awoken', default=False)
-    map02 = BooleanField(label='corrupted', default=False)
-    map03 = BooleanField(label='vale', default=False)
-    map04 = BooleanField(label='molten', default=False)
-    map05 = BooleanField(label='ruins', default=False)
-    map06 = BooleanField(label='deep', default=False)
-    map07 = BooleanField(label='exile', default=False)
-    submit = SubmitField(label="Submit")
-
-
-class ChampsForm(FlaskForm):
-    # TODO Сделать по аналогии с MapsForm
     submit = SubmitField(label="Submit")

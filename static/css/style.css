@@ -23,7 +23,8 @@
 }
 
 body {
-    display: flex;
+    /* display: flex; */
+    height: 100vh;
     background: var(--clr-bg);
 }
 
@@ -74,13 +75,32 @@ body {
 /* TODO данный блок должен изменяться в зависимости от этапа выбора силами JS */
 .choice-wrapper-champ {
     display: grid;
+    padding: 20px;
     grid-template-columns: 1fr 1fr 1fr 1fr;
     justify-content: center;
 }
 .choice-wrapper-map {
     display: grid;
+    padding: 20px;
     grid-template-columns: 1fr 1fr 1fr;
     justify-content: center;
+}
+
+.choice-wrapper-champ,
+.choice-wrapper-map {
+  animation-name: spread;
+  animation-duration: .5s;
+  animation-function: ease-out;
+  animation-fill-mode: forwards;
+  overflow: hidden;
+}
+
+.collapse {
+  animation-name: collapse;
+  animation-duration: .5s;
+  animation-function: ease-out;
+  animation-fill-mode: forwards;
+  overflow: hidden;
 }
 
 .choice-wrapper :nth-child(1).map-result-card,
@@ -217,13 +237,17 @@ body {
     z-index: -1;
   }
   
+  .card-waiting {
+    pointer-events:none;
+  }
+
   /* прячем чекбокс */
   input[type="checkbox"] {
     appearance: none;
     -moz-appearance: none;
     -webkit-appearance: none;
   }
-  
+
   /* ------------------------------- */
   /* состояния наведения мышью */
   .card-image-wrapper:hover::before {
@@ -395,6 +419,14 @@ body {
       50% { opacity: 0.6; }
       100% { opacity: 1; }   
   }
+  @keyframes spread {
+    from { width: 0; }   
+    to { width: 690px; }
+  }
+  @keyframes collapse {
+    from { width: 690px; }
+    to { width: 0; }
+  }
 
 /* ----------------- Игроки -----------------*/
 .player-card {
@@ -455,105 +487,145 @@ body {
 
 /* ----------------- Результаты -----------------*/
 .choice-wrapper {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    justify-content: center;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  justify-content: center;
+/*   border: 1px solid tomato; */
 }
 
 .map-result-card {
-    position: relative;
-    margin: 7px auto;
-    display: flex;
-    height: 144px;
-    width: 550px;
-    opacity: 0;
-    animation-fill-mode: forwards;
+  position: relative;
+  margin: 7px auto;
+  display: flex;
+  height: 144px;
+  width: 550px;
+  opacity: 0;
+  animation-fill-mode: forwards;
+/*   border: 1px solid tomato; */
 }
-
 .map-result-card::before {
-    position: absolute;
-    content: "";
-    top: 5px;
-    left: 15%;
-    height: 144px;
-    width: 70%;
-    box-shadow: 0px 10px 8px rgba(0, 0, 0, .6);
-    transform: scale(.9);
-    z-index: -300;
+  position: absolute;
+  content: "";
+  top: 5px;
+  left: 15%;
+  height: 144px;
+  width: 70%;
+  box-shadow: 0px 10px 8px rgba(0,0,0,.6);
+  transform: scale(.9);
+  z-index: -300;
 }
 
 .champ {
-    position: relative;
-    width: 144px;
-    height: 144px;
+  position: relative;
+  width: 144px;
+  height: 144px;
+/*   background: tomato; */
 }
 
 .champ::before {
-    position: absolute;
-    content: "";
-    top: 20px;
-    left: 20px;
-    right: 20px;
-    bottom: 20px;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 4px rgb(49, 239, 213);
-    z-index: -10;
+  position: absolute;
+  content: "";
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 4px rgb(49,239,213);
+  z-index: -10;
 }
 
 .champ::after {
-    position: absolute;
-    content: "";
-    top: 20px;
-    left: 20px;
-    right: 20px;
-    bottom: 20px;
-    border-radius: 50%;
-    box-shadow:
-        inset 0 0 14px rgb(49, 239, 213),
-        0 0 4px rgb(49, 239, 213);
-    z-index: -10;
-    animation: 3s glowing infinite;
+  position: absolute;
+  content: "";
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  border-radius: 50%;
+  box-shadow: 
+    inset 0 0 14px rgb(49,239,213),
+    0 0 4px rgb(49,239,213);
+  z-index: -10;
+  animation: 3s glowing infinite;
 }
 
 .champ img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .map {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    height: 144px;
-    width: 260px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  height: 144px;
+  width: 260px;
+/*   border: 1px solid tomato;   */
 }
 
 .map h1 {
-    position: absolute;
-    letter-spacing: -2px;
-    white-space: nowrap;
-    color: white;
-    font-weight: 600;
+  position: absolute;
+  letter-spacing: -2px;
+  white-space: nowrap;
+  color: white;
+  font-weight: 600;
 }
 
 .map::before {
-    position: absolute;
-    content: "";
-    top: 0;
-    left: -100px;
-    right: -100px;
-    bottom: 0px;
-    background: linear-gradient(to right, transparent 0%, black 10% 90%, transparent 100%);
-    z-index: -20;
+  position: absolute;
+  content: "";
+  top: 0;
+  left: -100px;
+  right: -100px;
+  bottom: 0px;
+  background: linear-gradient(to right, transparent 0%, black 10% 90%, transparent 100%);
+  z-index: -20;
 }
 
 .map img {
-    display: block;
-    margin: auto;
-    height: 100%;
+  display: block;
+  margin: auto;
+  height: 100%;
+}
+
+main :nth-child(1).map-result-card,
+main :nth-child(3).map-result-card,
+main :nth-child(5).map-result-card,
+.player-card.blue {
+  animation-name: slidein_left;
+  animation-duration: 2s;
+  animation-fill-mode: forwards;
+  animation-function: ease-out;
+/*   animation-iteration-count: infinite; */
+}
+
+main :nth-child(2).map-result-card,
+main :nth-child(4).map-result-card,
+.player-card.red {
+  animation-name: slidein_right;
+  animation-duration: 2s;
+  animation-fill-mode: forwards;
+  animation-function: ease-out;
+/*   animation-iteration-count: infinite; */
+}
+
+main :nth-child(1).map-result-card {
+  animation-delay: .2s;
+}
+main :nth-child(2).map-result-card {
+  animation-delay: .4s;
+}
+main :nth-child(3).map-result-card {
+  animation-delay: .6s;
+}
+main :nth-child(4).map-result-card {
+  animation-delay: .8s;
+}
+main :nth-child(5).map-result-card {
+  animation-delay: 1s;
 }
 
 

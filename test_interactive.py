@@ -9,7 +9,7 @@ from database import Room, User, Result
 # ------ Константы -------------------------------------------------------------
 
 URI = 'http://localhost:5000/api'
-
+room_uuid = "7ad138ca-b89e-463d-8345-d7314fa76aa2"
 
 
 
@@ -20,7 +20,7 @@ def test_getState():
         "jsonrpc": "2.0",
         "method": "app.getState",
         "params": {
-            "room_uuid": "af052543-9550-4a4a-b5d6-ae742eba2fad"
+            "room_uuid": room_uuid
         },
         "id": 1
     }
@@ -40,7 +40,7 @@ def test_updateState():
         "jsonrpc": "2.0",
         "method": "app.updateState",
         "params": {
-            "room_uuid": "dc3ad9c1-7452-40b6-99a1-e98ddc18a31e",
+            "room_uuid": room_uuid,
             "action": "ban",
             "nickname": "wilson",
             "choice": "awoken"
@@ -79,3 +79,20 @@ def test_updateState():
 # bo_type = 'bo3'
 # seed = 'You'
 # gbs = ICreateForm(game_mode, bo_type, seed)
+
+
+# Тестируем room.update_result
+# room_uuid = '63b71f72-7eab-4de9-bbf6-fc1dd8bc64da'
+# nickname = 'pashok'
+# room = Room.get_room(room_uuid)
+# if room.rel_users.nickname != nickname:
+#     raise Exception(f'Очередь пользователя {nickname} еще не наступила')
+# room.update_result('ban','map','Awoken')
+# room
+
+
+# Тестируем room.next_user()
+# room_uuid = '56cff8ad-f1c1-4f20-b438-3ce9fbdd6b57'
+# room = Room.get_room(room_uuid)
+# room.next_step()
+# room

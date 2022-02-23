@@ -53,4 +53,5 @@ pics = [
     "https://dev.quake-champions.com/css/images/maps/deep_embrace.jpg"
 ]
 
-path = 'static/images/maps'
+
+path = 'static/images/champions'

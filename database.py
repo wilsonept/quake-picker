@@ -1,7 +1,6 @@
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import text
 
-from exceptions import RoomDoesNotExist
 from application import _DB as db
 
 
@@ -16,8 +15,6 @@ from application import _DB as db
 '''
 
 ''' TODO Покрыть модели тестами'''
-
-''' TODO Начать писать фронт... что бы это не значило.'''
 
 ''' TODO Заполнить таблицу правилами 2v2.'''
 
@@ -96,32 +93,17 @@ class Room(db.Model):
     @classmethod
     def get_room(cls, room_uuid):
         '''Ищет комнату в таблице по uuid.'''
-        try:
-            requested_room = cls.query.filter_by(room_uuid=room_uuid).first()
-            db.session.commit()
-        except:
-            # отменяем транзакцию в случае ошибки.
-            db.session.rollback()
-            raise
+        requested_room = cls.query.filter_by(room_uuid=room_uuid).first()
         return requested_room
 
     @classmethod
-    def create_room(cls, game_mode_id, bo_type_id, seed) -> dict:
+    def create_room(cls, seed, current_step_id) -> dict:
         '''Создает комнату в таблице rooms и возвращает словарь содержащий
         id и uuid комнаты. На вход принимает только int
         '''
 
-        # Находим первый шаг в правилах по выбранным game_mode и bo_type
-        rule = Rule.query.filter_by(game_mode_id=game_mode_id,
-                             bo_type_id=bo_type_id, step=1).first()
-
-        room_params = {
-            "seed": seed,
-            "current_step_id": rule.id
-        }
-
         # создаем комнату
-        new_room = cls(**room_params)
+        new_room = cls(seed=seed, current_step_id=current_step_id)
 
         try:
             db.session.add(new_room)
@@ -130,7 +112,9 @@ class Room(db.Model):
             # отменяем транзакцию в случае ошибки.
             db.session.rollback()
             raise
-        return {'id': new_room.id, 'uuid': new_room.room_uuid}
+
+        return new_room
+        # return {'id': new_room.id, 'uuid': new_room.room_uuid}
 
     def init_current_user(self):
         '''Создает запись активного игрока в комнате.'''
@@ -146,16 +130,140 @@ class Room(db.Model):
             db.session.rollback()
             raise
 
-    @classmethod
-    def delete_room(cls):
-        '''Удаляет комнату текущего класса.'''
-        room_to_delete = cls.room_uuid
+    def next_user(self):
+        '''Меняет активного игрока в комнате. Работает пока только для двух
+        игроков
+        '''
+        current_user_id = self.current_user_id
+        for result in self.rel_results:
+            if result.user_id != current_user_id:
+                next_user_id = result.user_id
+
+        self.current_user_id = next_user_id
         try:
-            db.session.delete(room_to_delete)
             db.session.commit()
         except:
             db.session.rollback()
             raise
+
+    def next_step(self):
+        '''Меняет текущий шаг в комнате'''
+        self.next_user()
+        next_step = self.current_step_id + 1
+        self.current_step_id = next_step
+        try:
+            db.session.commit()
+        except:
+            db.session.rollback()
+            raise
+
+    def delete_room(self):
+        '''Удаляет комнату текущего класса.'''
+        try:
+            db.session.delete(self.room_uuid)
+            db.session.commit()
+        except:
+            db.session.rollback()
+            raise
+        return True
+
+    def create_result(self, user_id, team_id):
+        '''Создает результат в комнате. Используется при создании комнаты
+        и при подключении к ней. Воозвращает id нового результата.
+        '''
+
+        # Проверка на заполненость комнаты
+        results = self.get_results()
+        if len(results) > 1:
+            raise Exception('Комната уже заполнена')
+
+        # создаем результат
+        new_result = Result(user_id=user_id, room_id=self.id,
+                            team_id=team_id)
+        
+        try:
+            db.session.add(new_result)
+            db.session.commit()
+        except:
+            # отменяем транзакцию в случае ошибки.
+            db.session.rollback()
+            raise
+        return new_result.id
+
+    def get_results(self):
+        '''Возвращает список всех результатов в комнате'''
+
+        results = [result for result in self.rel_results]
+        return results
+
+    def get_result(self, user_id):
+        '''Ищет результат в комнате по id игрока.
+        Возвращает экземпляр класса Result
+        '''
+
+        for result in self.rel_results:
+            if result.user_id == user_id:
+                return result
+
+
+    def update_result(self, action, object_type, choice):
+        '''Вносит в базу выбор игрока'''
+
+        result = self.get_result(user_id=self.current_user_id)
+
+        if not result:
+            # если нет такой комнаты или пользователя
+            raise Exception('Запрошенного результата не существует.')
+
+        current_object_type = self.rel_rules.rel_object_types
+        current_action = self.rel_rules.rel_actions
+        
+        # Проверяем совпадение активного действия в комнате
+        if current_action.name != action:
+            raise Exception(f'Вы выполняете не верное действие: {action}')
+        
+        # Проверяем совпадение активного типа в комнате
+        if current_object_type.name != object_type:
+            raise Exception((
+                'Вы запрашиваете действие над не верным типом объекта: '
+                f'{current_object_type}'
+            ))
+
+        
+        # Получаем название поля для изменения
+        field_to_update = f"{object_type}_{action}s"
+
+        # Поля которые нам может понадобиться изменять
+        fields = {
+            "map_bans": Result.map_bans,
+            "map_picks": Result.map_picks,
+            "champ_bans": Result.champ_bans,
+            "champ_picks": Result.champ_picks
+        }
+
+        already_chosen = []
+        if result.__dict__[field_to_update]:
+            for item in result.__dict__[field_to_update]:
+                already_chosen.append(item)
+            
+            # Добавляем новое значение
+            already_chosen.append(choice)
+
+            db.session.query(Result)\
+                .filter(Result.id == result.id)\
+                .update({fields[field_to_update]: already_chosen})
+        else:
+            db.session.query(Result)\
+                .filter(Result.id == result.id)\
+                .update({fields[field_to_update]: [choice]})
+
+        try:
+            db.session.commit()
+        except:
+            # отменяем транзакцию в случае ошибки.
+            db.session.rollback()
+            raise
+
         return True
 
 
@@ -176,104 +284,6 @@ class Result(db.Model):
     rel_users = db.relationship("User", back_populates="rel_results")
     rel_rooms = db.relationship("Room", back_populates="rel_results")
     rel_teams = db.relationship("Team", back_populates="rel_results")
-
-    @classmethod
-    def get_result(cls, room_id, **kwargs):
-        '''Ищет результаты игроков по id комнаты, так же принимает **kwargs
-        для дополнительной фильтрации
-        '''
-
-        requested_result = cls.query.filter_by(room_id=room_id, **kwargs).all()
-
-        return requested_result
-
-    @classmethod
-    def create_result(cls, user_id, room_id, team_id) -> int:
-        '''Создает результат в таблице results и
-        возвращает id результата.
-        '''
-
-        # Проверка на заполненость комнаты
-        results = cls.query.filter_by(room_id=room_id).all()
-        if len(results) > 1:
-            return cls.query.filter_by(room_id=room_id, user_id=user_id).first()
-
-        result_params = {
-            "user_id": user_id,
-            "room_id": room_id,
-            "team_id": team_id
-        }
-
-        # создаем результат
-        new_results = cls(**result_params)
-        
-        try:
-            db.session.add(new_results)
-            db.session.commit()
-        except:
-            # отменяем транзакцию в случае ошибки.
-            db.session.rollback()
-            raise
-        return new_results.id
-
-
-    @classmethod
-    def update_result(cls, room_id, action, user_id, choice):
-        '''Вносит в базу выбор игрока'''
-        result = cls.get_result(room_id=room_id, user_id=user_id)[0]
-        if not result:
-            # если нет такой комнаты или пользователя
-            raise ValueError
-
-        current_step = result.rel_rooms.current_step
-        current_action = result.rel_rooms.rel_actions
-        if current_action.name != action:
-            raise ValueError
-
-        if action == 'ban':
-            # TODO Добавить проверку на совпадения в существующем списке банов
-            # TODO Найти элегантное решение вместо этого колхоза.
-            # NOTE Этот кусок кода нужен что бы создать совершенно новый список
-            # Если этого не сделать, а просто добавить значение к result.bans
-            # или result.picks, то изменения в базе не применятся.
-            bans = []
-            if current_step == 'map':
-                for ban in result.map_bans:
-                    bans.append(ban)
-                bans.append(choice)
-                result.map_bans = bans
-            else:
-                for ban in result.champ_bans:
-                    bans.append(ban)
-                bans.append(choice)
-                result.champ_bans = bans
-        else:
-            # TODO Добавить проверку на совпадения в существующем списке пиков
-            # TODO Найти элегантное решение вместо этого колхоза.
-            # NOTE Этот кусок кода нужен что бы создать совершенно новый список
-            # Если этого не сделать, а просто добавить значение к result.bans
-            # или result.picks, то изменения в базе не применятся.
-            picks = []
-            if current_step == 'map':
-                for pick in result.map_picks:
-                    picks.append(pick)
-                picks.append(choice)
-                result.map_picks = picks
-            else:
-                for pick in result.champ_picks:
-                    picks.append(pick)
-                picks.append(choice)
-                result.champ_picks = picks
-
-        try:
-            db.session.add(result)
-            db.session.commit()
-        except:
-            # отменяем транзакцию в случае ошибки.
-            db.session.rollback()
-            raise
-
-        return True
 
 
 class Rule(db.Model):
@@ -366,7 +376,9 @@ class Object_type(db.Model):
 
 
 class Object(db.Model):
-    '''Таблица объектов. Содержит в себе все карты и всех чемпионов.'''
+    '''
+    Таблица объектов. Содержит в себе все карты и всех чемпионов.
+    '''
     __tablename__ = 'objects'
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
@@ -399,38 +411,39 @@ class Team(db.Model):
 
 # ------ Функции основные -----------------------------------------------------
 
-def start_game(nickname, game_mode_id, bo_type_id, seed) -> dict:
+def start_game(nickname, seed, current_step_id) -> dict:
     ''' Создает пользователя если необходимо, создает комнату и результат
     для пользователя создавшего комнату. Возвращает словарь основных
     параметров игры для передачи его фронту.
     '''
     new_user_id = User.create_user(nickname)
-    new_room = Room.create_room(game_mode_id, bo_type_id, seed)
-    new_result_id = Result.create_result(new_user_id, new_room['id'], team_id=1)
+    new_room = Room.create_room(seed, current_step_id)
+    # Создаем результат пользователя создавшего игру
+    new_room.create_result(new_user_id, team_id=1)
     
     # Забираем из типа UUID только строковое представление этого uuid
-    new_room_uuid = new_room['uuid'].urn.split(':')[-1]
+    new_room_uuid = new_room.room_uuid.urn.split(':')[-1]
 
     return {'room_uuid': new_room_uuid, 'nickname': nickname}
 
 def join_room(nickname, room_uuid) -> dict:
     '''Создает пользователя если необходимо, проверяет существование комнаты
-    создает результат для подключающегося пользователя. Возвращает словарь
-    основных параметров игры для передачи его фронту.
+    создает результат для подключающегося пользователя. True или False в
+    в зависимости от успеха операции.
     '''
     # Получаем комнату по uuid
-    room = Room.query.filter_by(room_uuid=room_uuid).first()
+    room = Room.get_room(room_uuid)
     
     # Проверка на существование комнаты
     if not bool(room):
-        raise RoomDoesNotExist('This room does not exist in database')
+        raise Exception('Этой комнаты не существует в базе данных')
 
     # Создаем пользователя
     new_user_id = User.create_user(nickname=nickname)
     
     # Создаем результат подключающегося пользователя
     # NOTE будет работать только при условии что команд всего две.
-    new_result_id = Result.create_result(new_user_id, room.id, team_id=2)
+    new_result_id = room.create_result(new_user_id, team_id=2)
     
     # Инициализируем текущего активного игрока в комнате
     room.init_current_user()
@@ -438,9 +451,9 @@ def join_room(nickname, room_uuid) -> dict:
     room_uuid = room.room_uuid.urn.split(':')[-1]
 
     if new_result_id == None:
-        return {'room_uuid': room_uuid}
+        return False
 
-    return {'room_uuid': room_uuid, 'nickname': nickname}
+    return True
 
 
 
@@ -471,7 +484,10 @@ def generate_report(room_uuid):
     '''Генерируем полный отчет о состоянии игры в JSON формате'''
     # Получаем инфу по комнате и по доступным картам
     room = Room.get_room(room_uuid=room_uuid)
+
+    # TODO сделать в виде метода экземпляра класса Room (get_champions)
     champions = Object.query.filter_by(type=2).all()
+    # TODO сделать в виде метода экземпляра класса Room (get_maps)
     current_season = Current_season.query.all()
     season_maps = [item.rel_objects for item in current_season]
     results = room.rel_results
@@ -486,18 +502,30 @@ def generate_report(room_uuid):
             player_state['map_picks'] = [
                 obj for obj in result.map_picks
             ]
+        else:
+            player_state['map_picks'] = []
+
         if result.map_bans != None:
             player_state['map_bans'] = [
                 obj for obj in result.map_bans
             ]
+        else:
+            player_state['map_bans'] = []
+
         if result.champ_picks != None:
             player_state['champ_picks'] = [
                 obj for obj in result.champ_picks
             ]
+        else:
+            player_state['champ_picks'] = []
+
         if result.champ_bans != None:
             player_state['champ_bans'] = [
                 obj for obj in result.champ_bans
             ]
+        else:
+            player_state['champ_bans'] = []
+
         player_states.append(player_state)
         player_state = {}
 
@@ -508,15 +536,21 @@ def generate_report(room_uuid):
     current_game_state['seed'] = room.seed
 
     current_game_state['maps'] = [
-        map.name for map in season_maps if map.type==1
+        {
+            "name": map.name,
+            "img_url": map.img_url
+        } for map in season_maps if map.type==1
     ]
     current_game_state['champs'] = [
-        champ.name for champ in champions
+        {"name": champ.name, "img_url": champ.img_url} for champ in champions
     ]
 
     if room.rel_users != None:
         current_game_state['current_player'] = room.rel_users.nickname
     else:
         current_game_state['current_player'] = ''
+
+    current_game_state['current_object'] = room.rel_rules.rel_object_types.name
+    current_game_state['step'] = room.rel_rules.step
 
     return current_game_state

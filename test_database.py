@@ -8,6 +8,8 @@ from database import Object, User, Result, Room, delete_room
 # ------ Константы ------------------------------------------------------------
 
 MAPS_IN_SEASON = 7 # количество карт в сезоне.
+ROOM_UUID = '11111111-ffff-8888-aaaa-cccccccccccc'
+SEED = 1
 
 
 

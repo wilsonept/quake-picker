@@ -4,7 +4,7 @@
 
 {% block content %}
 
-    <main class="d-flex vh-100 w-auto justify-content-center align-items-center bg-dark">
+    <main class="d-flex vh-100 w-100 justify-content-center align-items-center">
         <form class="form__custom d-flex flex-column border rounded-3 px-5 pb-3" method="POST" action="{{ url_for('join', room_uuid=room_uuid) }}" novalidate>
 
             {{ form.csrf_token }}

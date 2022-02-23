@@ -1,15 +1,18 @@
-import random
 import json
 
-from flask import jsonify, render_template, url_for, redirect, request
+from flask import render_template, send_from_directory, url_for, redirect, request
 
 from application import app
-from forms import CreateForm, JoinForm, MapsForm
+from forms import CreateForm, JoinForm
 from application import _JSONRPC as jsonrpc
-from database import Room, Result, generate_report, start_game, join_room
+from database import Room, generate_report, start_game, join_room
 
 
-
+''' TODO Начать делать тесты!!! Становится понятно зачем они вообще нужны...
+Отсутвие тестов приводит к тому что мы упускаем поломки кода в связи со свежими
+изменениями. Чем дольше мы не исправляем эти ошибки тем сложнее их исправить
+в дальнейшем.
+'''
 
 # ------ Маршруты APP ---------------------------------------------------------
 
@@ -35,9 +38,11 @@ def create():
 
         # Начинаем игру с создания пользователя, комнаты и результата игрока
         params = start_game(**start_game_params)
+        game_state = generate_report(params['room_uuid'])
 
         return redirect(url_for('room', room_uuid=params['room_uuid'],
-                                nickname=params['nickname']))
+                                nickname=params['nickname'],
+                                game_state=game_state))
 
     return render_template('create_form.html', form=form, errors=form.errors)
 
@@ -55,13 +60,16 @@ def join(room_uuid):
                 form_data[key] = value
 
         # Подключаемся к комнате, создавая пользователя и его результата
-        params = join_room(**form_data)
+        operation_result = join_room(**form_data)
 
-        if not 'nickname' in params:
-            return redirect(url_for('room', room_uuid=params['room_uuid']))
+        game_state = generate_report(room_uuid)
 
-        return redirect(url_for('room', room_uuid=params['room_uuid'],
-                                nickname=params['nickname']))
+        if operation_result == False:
+            return redirect(url_for('room', room_uuid=room_uuid))
+
+        return redirect(url_for('room', room_uuid=room_uuid,
+                                nickname=form_data['nickname'],
+                                game_state=game_state))
     else:
         return render_template('join_form.html', form=form, errors=form.errors,
                                room_uuid=room_uuid)
@@ -69,19 +77,13 @@ def join(room_uuid):
 
 @app.route("/<uuid:room_uuid>")
 @app.route("/<uuid:room_uuid>/<string:nickname>", methods=['GET'])
-def room(room_uuid, **kwargs):
+def room(room_uuid, nickname=None):
     ''' Основная страница выбора, она же комната '''
 
     game_state = generate_report(room_uuid)
 
-    if not 'nickname' in kwargs.keys():
-        is_active = False
-        return render_template('room.html', room_uuid=room_uuid,
-                               game_state=game_state, is_active=is_active)
-
-    is_active = True
     return render_template('room.html', room_uuid=room_uuid,
-                           game_state=game_state, is_active=is_active)
+                            game_state=game_state)
 
 
 
@@ -90,15 +92,15 @@ def room(room_uuid, **kwargs):
 
 @jsonrpc.method("app.getState", validate=False)
 def getState(room_uuid:str) -> str:
-    '''Возвращает текущее состояние игры на основе room_id и nickname
-    в JSON формате
+    '''Возвращает текущее состояние игры на основе room_id в JSON формате
     '''
 
     return json.dumps(generate_report(room_uuid))
 
 
 @jsonrpc.method("app.updateState")
-def updateState(room_uuid:str, action:str, nickname:str, choice:str) -> str:
+def updateState(room_uuid:str, action:str, nickname:str, choice:str,
+                object_type:str) -> str:
     '''Принимает выбор игрока, room_id, action, nickname, choice.
     Возвращает json cо всем состоянием игры
     '''
@@ -106,12 +108,12 @@ def updateState(room_uuid:str, action:str, nickname:str, choice:str) -> str:
     # Ищем комнату и активного игрока
     room = Room.get_room(room_uuid)
     if room.rel_users.nickname != nickname:
-        # TODO написать нормальную обработку ошибок
-        return
+        raise Exception(f'Очередь пользователя {nickname} еще не наступила')
 
     # Вносим изменения в результат
     try:
-        Result.update_result(room.id, action, room.current_user_id, choice)
+        room.update_result(action, object_type, choice)
+        room.next_step()
     except ValueError:
         # TODO написать нормальную обработку ошибок
         print('Something went wrong inside the class method')
@@ -125,50 +127,39 @@ def updateState(room_uuid:str, action:str, nickname:str, choice:str) -> str:
 
 # ------ Тестовые маршруты ----------------------------------------------------
 
-@app.route("/<uuid:room_uuid>/maps")
-def maps(room_uuid):
-    ''' Страница результатов выбора '''
-    return render_template('maps.html', room_uuid=room_uuid)
-
-
-@app.route("/<uuid:room_uuid>/champs")
-def champions(room_uuid):
-    ''' Страница результатов выбора '''
-    return render_template('champions.html', room_uuid=room_uuid)
-
-
 @app.route("/<uuid:room_uuid>/results")
 def results(room_uuid):
     ''' Страница результатов выбора '''
 
     # TODO Если игра не окончена то redirect в комнату
 
-    return render_template('results.html', room_uuid=room_uuid)
+    game_state = generate_report(room_uuid)
+
+    # TODO Условие должно быть сгенерировано на основе режима игры в комнате.
+    if game_state['step'] >= 16:
+    
+        player_1 = game_state['players'][0]
+        player_2 = game_state['players'][1]
+
+        index = 1
+        maps = player_1['map_picks']
+        for map in player_2['map_picks']:
+            maps.insert(1,map)
+            index = index + 2
+
+        game_results = []
+        for result in zip(maps, player_1['champ_picks'], player_2['champ_picks']):
+            game_results.append(result)
+
+        return render_template('results.html', room_uuid=room_uuid,
+                               game_results=game_results, game_state=game_state)
+    
+    return redirect('room', room_uuid=room_uuid)
 
 
-@app.route("/picking_form", methods=['GET'])
-def picking_form():
-    ''' Форма пика карт'''
-    form = MapsForm()
-    return render_template('maps_form.html', form=form)
-
-
-
-
-# ------ маршруты, для проверки работы с xhr запросами ------------------------
-
-@app.route("/state")
-def state():
-    result = random.choice(['map', 'champ', 'result'])
-    response = {'result': result}
-    return jsonify(response)
-
-@app.route("/test")
-def test():
-    return render_template('hello.html')
-
-
-
+@app.route("/robots.txt")
+def robots():
+    return send_from_directory(app.static_folder, 'robots.txt')
 
 # ------ Запуск приложения ----------------------------------------------------
 

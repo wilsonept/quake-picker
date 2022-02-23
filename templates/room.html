@@ -31,14 +31,19 @@
                         <img class="country-flag" src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Flag_of_Russia.png">
                     </div>
                     <img class="team-logo" src="../static/images/python_logo.png" width="100%">
-                    <h1>WILSON</h1>
+                    <h1>{{ game_state.players[0].nickname }}</h1>
                 </div>
             </div>
         </div>
         <!--   champs and maps -->
-            {# <div class="choice-wrapper"> #}
-                {% block content %}{% endblock %}
-            {# </div> #}
+            <main>
+            {% block content %}
+
+                <!-- TODO Перенести в styles.css -->
+                <h1 style="color: white; font-size: 6rem; font-family:'Comic Sans MS', sans-serif; font-style: italic;">vs</h1>
+            
+            {% endblock %}
+            </main>
         <!--   player two -->
         <div class="player-card red">
             <div class="player-card-wrapper">
@@ -52,11 +57,71 @@
                     </div>
                     <div>
                         <img class="team-logo" src="../static/images/python_logo.png" width="100%">
-                        <h1>LORD</h1>
+                        {% if game_state.players[1] %}
+                            <h1>{{ game_state.players[1].nickname }}</h1>
+                        {% else %}
+                            <h1>???</h1>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
         <script src="/static/js/main.js" rel="stylesheet"></script>
+        
+        <!-- Templates -->
+        
+        <!-- Maps -->
+        <template id="maps">
+            <h1 style="color: white; font-family: Poppins; margin-left: 30px;">Nickname action</h1>
+            <div class="choice-wrapper-map">
+            {% for map in game_state.maps %}
+                <label id="{{ map.name }}" class="card card-map">
+                    <div class="card-image-wrapper">
+                        <img class="card-image" src="/static/images/maps/{{ map.img_url }}">
+                    </div>
+                    <div class="card-outer-light"></div>
+                    <input name="{{ map.name }}" type="checkbox">
+                </label>
+            {% endfor %}
+            </div>
+        </template>
+
+        <!-- Champions -->
+        <template id="champs">
+            <h1 style="color: white; font-family: Poppins; margin-left: 30px;">Nickname action</h1>
+            <div class="choice-wrapper-champ">
+            {% for champ in game_state.champs %}
+                <label id="{{ champ.name }}" class="card card-champ">
+                    <div class="card-image-wrapper">
+                        <img class="card-image" src="/static/images/champions/{{ champ.img_url }}">
+                    </div>
+                    <div class="card-outer-light"></div>
+                    <input name="{{ champ.name }}" type="checkbox">
+                </label>
+            {% endfor %}
+        </template>
+
+        <!-- Results -->
+        {# <template>
+
+            <!-- TODO сделать автогенерирующиеся рузультаты. Необходимо 
+            определиться с логикой как будут определяться связи с выбранными
+            картами и чемпионами -->
+
+            {% for map in game_state.maps %}
+                <div class="map-result-card">
+                    <div class="champ">
+                        <img src='https://churchofquake.com/wp-content/uploads/2019/08/456px-Eisen-transparency-7.png'>
+                    </div>
+                    <div class="map">
+                        <img src='http://churchofquake.com/wp-content/uploads/2021/05/QC_Loading_Screen_Keep-1170x658.png'>
+                        <h1>{{ map.name }}</h1>
+                    </div>
+                    <div class="champ">
+                        <img src='https://churchofquake.com/wp-content/uploads/2019/08/DOOM_Slayer_Bigger.png'>
+                    </div>
+                </div>
+            {% endfor %}
+        </template> #}
     </body>
 </html>
