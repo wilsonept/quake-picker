@@ -220,7 +220,7 @@ function rebuildPage(response) {
   localStorage.setItem('gameState', response.result)
   const parsedResponse = JSON.parse(response.result)
 
-  if (parsedResponse.step === 16) {
+  if (parsedResponse.step > 16) {
     window.location.pathname = `/${parsedResponse.room_uuid}/results`
   }
 
@@ -291,8 +291,7 @@ if (typeof response !== 'undefined') {
   const parsedResponse = JSON.parse(response.result)
 
   // TODO Условие должно быть сгенерировано на основе режима игры в комнате.
-  if (parsedResponse.step >= 16) {
+  if (parsedResponse.step > 16) {
     clearInterval(pageAutoUpdate)
   }
 }
-

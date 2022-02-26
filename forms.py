@@ -5,7 +5,9 @@ from wtforms.validators import DataRequired, AnyOf
 
 from database import Game_mode, Bo_type, Room, Rule
 
-
+'''
+Файл с формами приложения.
+'''
 
 
 # ------ Формы ----------------------------------------------------------------

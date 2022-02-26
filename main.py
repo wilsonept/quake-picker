@@ -8,18 +8,17 @@ from application import _JSONRPC as jsonrpc
 from database import Room, generate_report, start_game, join_room
 
 
-''' TODO Начать делать тесты!!! Становится понятно зачем они вообще нужны...
-Отсутвие тестов приводит к тому что мы упускаем поломки кода в связи со свежими
-изменениями. Чем дольше мы не исправляем эти ошибки тем сложнее их исправить
-в дальнейшем.
 '''
+Основной файл запуска приложения и по совместительству файл маршрутов
+'''
+
 
 # ------ Маршруты APP ---------------------------------------------------------
 
 @app.route("/")
 @app.route("/home")
 def home():
-    return '<h1>Hello, Flask</h1>'
+    return redirect(url_for('create'))
 
 
 @app.route("/create", methods=['GET', 'POST'])
@@ -92,7 +91,8 @@ def room(room_uuid, nickname=None):
 
 @jsonrpc.method("app.getState", validate=False)
 def getState(room_uuid:str) -> str:
-    '''Возвращает текущее состояние игры на основе room_id в JSON формате
+    '''
+    Возвращает текущее состояние игры на основе room_id в JSON формате
     '''
 
     return json.dumps(generate_report(room_uuid))
@@ -101,7 +101,8 @@ def getState(room_uuid:str) -> str:
 @jsonrpc.method("app.updateState")
 def updateState(room_uuid:str, action:str, nickname:str, choice:str,
                 object_type:str) -> str:
-    '''Принимает выбор игрока, room_id, action, nickname, choice.
+    '''
+    Принимает выбор игрока, room_id, action, nickname, choice.
     Возвращает json cо всем состоянием игры
     '''
     
@@ -136,7 +137,7 @@ def results(room_uuid):
     game_state = generate_report(room_uuid)
 
     # TODO Условие должно быть сгенерировано на основе режима игры в комнате.
-    if game_state['step'] >= 16:
+    if game_state['step'] > 16:
     
         player_1 = game_state['players'][0]
         player_2 = game_state['players'][1]
