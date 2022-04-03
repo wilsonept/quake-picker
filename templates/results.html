@@ -5,69 +5,16 @@
     {% for result in game_results %}
     <div class="map-result-card">
       <div class="champ">
-        <img src='/static/images/champions/r_{{ result[1].lower() }}.png'>
+        <img src='/static/images/champions/r_{{ result[2].lower() }}.png'>
       </div>
       <div class="map">
         <img src='/static/images/maps/{{ result[0].lower() }}.jpg'>
-        <h1>{{ result[0].upper() }}</h1>
+        <h1>{{ result[0].upper().replace("_", " ") }}</h1>
       </div>
       <div class="champ">
-        <img src='/static/images/champions/r_{{ result[2].lower() }}.png'>
+        <img src='/static/images/champions/r_{{ result[1].lower() }}.png'>
       </div>
     </div>
     {% endfor %}
-<!--
-    <div class="map-result-card">
-      <div class="champ">
-        <img src='https://churchofquake.com/wp-content/uploads/2019/08/247px-Galena.png'>
-      </div>
-      <div class="map">
-        <img src='http://churchofquake.com/wp-content/uploads/2021/05/QC_Loading_Screen_Ruins-1170x658.png'>
-        <h1>RUINS OF SARNATH</h1>
-      </div>
-      <div class="champ">
-        <img src='https://churchofquake.com/wp-content/uploads/2019/08/Anarki-iso.png'>
-      </div>
-    </div>
-
-    <div class="map-result-card">
-      <div class="champ">
-        <img src='https://churchofquake.com/wp-content/uploads/2019/08/269px-Ranger.png'>
-      </div>
-      <div class="map">
-        <img src='http://churchofquake.com/wp-content/uploads/2021/05/QC_Loading_Screen_Awoken-768x432.png'>
-        <h1>AWOKEN</h1>
-      </div>
-      <div class="champ">
-        <img src='https://churchofquake.com/wp-content/uploads/2019/08/211px-Nyx.png'>
-      </div>
-    </div>
-
-    <div class="map-result-card">
-      <div class="champ">
-        <img src='https://churchofquake.com/wp-content/uploads/2019/08/265px-Vizor.png'>
-      </div>
-      <div class="map">
-        <img src="http://churchofquake.com/wp-content/uploads/2021/05/QC_Loading_Screen_Molten_Falls-1170x658.png">
-        <h1>THE MOLTEN FALLS</h1>
-      </div>
-      <div class="champ">
-        <img src='https://churchofquake.com/wp-content/uploads/2019/08/219px-Slash.png'>
-      </div>
-    </div>
-
-    <div class="map-result-card">
-      <div class="champ">
-        <img src='https://churchofquake.com/wp-content/uploads/2019/08/386px-Better_DK.png'>
-      </div>
-      <div class="map">
-        <img src='http://churchofquake.com/wp-content/uploads/2021/05/QC_Loading_Screen_Vale_of_Pnath-1170x658.png'>
-        <h1>VALE OF PNATH</h1>
-      </div>
-      <div class="champ">
-        <img src='https://churchofquake.com/wp-content/uploads/2019/08/231px-B.J.-231x500.png'>
-      </div>
-    </div>
--->
 
 {% endblock %}

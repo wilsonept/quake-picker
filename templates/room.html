@@ -27,11 +27,21 @@
                 </div>
                 <div class="player-info">
                     <div class="country-wrapper">
-                        <h2>RUSSIA </h2>
-                        <img class="country-flag" src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Flag_of_Russia.png">
+                        <h2></h2>
+                        <img class="country-flag invisible" src="">
                     </div>
                     <img class="team-logo" src="../static/images/python_logo.png" width="100%">
-                    <h1>{{ game_state.players[0].nickname }}</h1>
+                    
+                    {% if game_state.players[0].team == 'blue' %}
+                        {% set index = 0 %}
+                    {% else %}
+                        {% set index = 1 %}
+                    {% endif %}
+                    
+                    {% set player1 = game_state.players[index] %}
+                    {% set player2 = game_state.players[index+1] %}
+
+                    <h1>{{ player1.nickname }}</h1>
                 </div>
             </div>
         </div>
@@ -52,13 +62,13 @@
                 </div>
                 <div class="player-info">
                     <div class="country-wrapper">
-                        <h2>UKRAINE </h2>
-                        <img class="country-flag" src="https://upload.wikimedia.org/wikipedia/commons/d/d2/Flag_of_Ukraine.png">
+                        <h2></h2>
+                        <img class="country-flag invisible" src="">
                     </div>
                     <div>
                         <img class="team-logo" src="../static/images/python_logo.png" width="100%">
-                        {% if game_state.players[1] %}
-                            <h1>{{ game_state.players[1].nickname }}</h1>
+                        {% if player2 %}
+                            <h1>{{ player2.nickname }}</h1>
                         {% else %}
                             <h1>???</h1>
                         {% endif %}
@@ -100,28 +110,5 @@
                 </label>
             {% endfor %}
         </template>
-
-        <!-- Results -->
-        {# <template>
-
-            <!-- TODO сделать автогенерирующиеся рузультаты. Необходимо 
-            определиться с логикой как будут определяться связи с выбранными
-            картами и чемпионами -->
-
-            {% for map in game_state.maps %}
-                <div class="map-result-card">
-                    <div class="champ">
-                        <img src='https://churchofquake.com/wp-content/uploads/2019/08/456px-Eisen-transparency-7.png'>
-                    </div>
-                    <div class="map">
-                        <img src='http://churchofquake.com/wp-content/uploads/2021/05/QC_Loading_Screen_Keep-1170x658.png'>
-                        <h1>{{ map.name }}</h1>
-                    </div>
-                    <div class="champ">
-                        <img src='https://churchofquake.com/wp-content/uploads/2019/08/DOOM_Slayer_Bigger.png'>
-                    </div>
-                </div>
-            {% endfor %}
-        </template> #}
     </body>
 </html>

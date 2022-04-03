@@ -26,6 +26,7 @@ body {
     /* display: flex; */
     height: 100vh;
     background: var(--clr-bg);
+    /* background: center/cover no-repeat url(/static/images/maps/awoken.jpg); */
 }
 
 .container {
@@ -58,15 +59,16 @@ body {
 /* TODO необходимо менять content в зависимости от этапа выбора силами JS */
 .container::before {
     content: 'PICKING \A     RESULTS';
-    color: rgba(81, 75, 80, .2);
+    color: rgba(81, 75, 80, .1);
+    -webkit-text-stroke: 1px rgba(81, 75, 80, .6);
     z-index: -99;
 }
 
 /* TODO необходимо менять content в зависимости от этапа выбора силами JS */
 .container::after {
     content: 'PICKING \A     RESULTS \A    PICKING RESULTS \A  PICKING RESULTS \A PICKING RESULTS';
-    color: rgb(28, 22, 29);
-    text-shadow: -1px -1px 0 rgba(81, 75, 80, .2), 1px -1px 0 rgba(81, 75, 80, .2), -1px 1px 0 rgba(81, 75, 80, .2), 1px 1px 0 rgba(81, 75, 80, .2);
+    color: rgba(28, 22, 29, 0);
+    -webkit-text-stroke: 1px rgba(81, 75, 80, .4);
     z-index: -100;
 }
 
@@ -501,6 +503,7 @@ body {
   height: 144px;
   width: 550px;
   opacity: 0;
+  font-family: "Montserrat", sans-serif;
   animation-fill-mode: forwards;
 /*   border: 1px solid tomato; */
 }

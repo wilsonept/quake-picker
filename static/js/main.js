@@ -295,3 +295,31 @@ if (typeof response !== 'undefined') {
     clearInterval(pageAutoUpdate)
   }
 }
+
+
+// Тестируем работу с websocket
+
+function testSocket() {
+        
+  // create websocket instance
+  var mySocket = new WebSocket("ws://127.0.0.1:5000/get_state");
+
+  mySocket.onmessage = function (event) {
+      console.log(event.data)
+      document.getElementsByTagName('h1')[0].innerText = event.data
+  }
+  
+  return mySocket;
+}
+
+// TODO Переделать что бы websocket принимал JSON
+mySocket.send('update 129e833a-95e6-4563-8763-f01b5fa2785a')
+
+
+window.onload = (event) => {
+  function play() {
+    var snd = document.getElementById("snd")
+    snd.play();
+  }
+  play()
+};

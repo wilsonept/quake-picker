@@ -1,7 +1,7 @@
 import json
 import requests
 
-from database import Room, User, Result
+#from database import Room, User, Result
 
 
 
@@ -14,7 +14,7 @@ room_uuid = "7ad138ca-b89e-463d-8345-d7314fa76aa2"
 
 
 # ------- Функции -------------------------------------------------------------
-
+'''
 def test_getState():
     payload = {
         "jsonrpc": "2.0",
@@ -25,10 +25,10 @@ def test_getState():
         "id": 1
     }
     headers = {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json",dw
     }
 
-    response = requests.post(URI, data=json.dumps(payload), headers=headers)
+    response = requests.post(URI, data=payload, headers=headers)
     print(response.json())
     response.raise_for_status()
 
@@ -51,9 +51,11 @@ def test_updateState():
         "Content-Type": "application/json",
     }
 
-    response = requests.post(URI, data=json.dumps(payload), headers=headers)
+    response = requests.post(URI, json=payload, headers=headers)
     print(response.json())
     response.raise_for_status()
+
+'''
 
 # test_updateState()
 
@@ -96,3 +98,26 @@ def test_updateState():
 # room = Room.get_room(room_uuid)
 # room.next_step()
 # room
+
+
+
+headers = {
+    'Content-Type': 'application/json',
+}
+
+payload = {
+    "jsonrpc": "2.0",
+    "method": "app.test",
+    "params": {
+        'lastname': 'Zakharchenko',
+        'name': 'Dmitry',
+        'surname': 'Leonidovich',
+    },
+    "id": 1
+}
+
+response = requests.post(URI, json=payload, headers=headers)
+response.raise_for_status()
+
+print(response.json())
+
