@@ -1,9 +1,9 @@
 import random
 from flask_wtf import FlaskForm
-from wtforms import SelectField, StringField, SubmitField, BooleanField
+from wtforms import SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, AnyOf
 
-from models import Game_mode, Bo_type, Room, Rule
+from models import Game_mode, Bo_type, Rule
 
 '''
 Файл с формами приложения.

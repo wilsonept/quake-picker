@@ -3,8 +3,10 @@ from pprint import pprint
 
 # NOTE Закомментировано так как sqlite не поддерживает данный тип данных.
 #from sqlalchemy.dialects.postgresql import UUID
-from uuid import uuid4
-from sqlalchemy import text
+#from sqlalchemy import text
+from sqlalchemy.types import CHAR, TypeDecorator
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
 
 from application import _DB as db, conf
 
@@ -25,6 +27,47 @@ from application import _DB as db, conf
 # TODO Обойти отсутствии поддержки uuid формата данный в SQLite.
 # Сейчас для миграции на PostgreSQL потребуется править модели
 # (при условии что мы хотим работать с нативным для PostgreSQL uuid).
+
+
+class MimicUUID(TypeDecorator):
+    '''
+    Прикидывается типом postgresql UUID или CHAR в
+    зависимости от конфигурации приложения. 
+    Небходим для совместимости приложения с PostgreSQL и SQLite.
+    '''
+
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(UUID())
+        else:
+            return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect) -> None:
+        '''Выполняется когда мы берем из базы значение.'''
+        if value == None:
+            return value
+        elif dialect.name =='postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                # Используем встроенную библиотеку uuid для получения
+                # числового представления uuid для дальнейшего форматирования.
+                return "{uuid:32x}".format(uuid=uuid.UUID(value).int)
+            else:
+                return "{uuid:32x}".format(uuid=value.int)
+
+    def process_result_value(self, value, dialect) -> None:
+        '''Выполняется когда мы кладем значение в базу.'''
+        if value == None:
+            return value
+        elif not isinstance(value, uuid.UUID):
+            return uuid.UUID(value)
+        else:
+            return value
+        
 
 
 # ------ Модели --------------------------------------------------------
@@ -83,8 +126,8 @@ class Room(db.Model):
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
-    room_uuid = db.Column(db.String(36), nullable=False, unique=True,
-                          default=str(uuid4()))
+    room_uuid = db.Column(MimicUUID(), nullable=False, unique=True,
+                          default=str(uuid.uuid4()))
     # NOTE Закомментировано так как sqlite не поддерживает данный тип данных.
     # room_uuid = db.Column(UUID(as_uuid=True), server_default=text("uuid_generate_v4()")) 
     current_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),

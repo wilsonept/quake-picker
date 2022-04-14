@@ -3,7 +3,7 @@ __pycache__
 .pyenv
 venv
 config.json
-misc.py
 .vscode
 quakepicker.db
+sandbox.py
 dbdbdbdb.py
