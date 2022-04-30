@@ -1,0 +1,20 @@
+* Переписать модели под новую архитектуру.
+
+** DONE Переписать свойства таблиц и их связи.
+  - [X] Переименовать класс Result в Session.
+  - [X] Удалить старые связи таблицы Session с Map_choice и Champ_choice и создать новые.
+  - [X] Создать связи Room с Map_choice и Champ_choice.
+
+** DONE Перестроить базу данных.
+
+
+** TODO Переписать логику *models.py*
+  - [ ] generate_report
+    - [ ] Протестировать.
+
+  - [X] update_result => save_choice 
+    - [ ] Протестировать.
+
+** TODO Переписать логику *main.py*
+
+** TODO Переписать логику *main.js*

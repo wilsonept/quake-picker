@@ -5,14 +5,14 @@
     {% for result in game_results %}
     <div class="map-result-card">
       <div class="champ">
-        <img src='/static/images/champions/r_{{ result[2].lower() }}.png'>
+        <img src="/static/images/champions/r_{{ result[2]['short_name'].lower() }}.png">
       </div>
       <div class="map">
-        <img src='/static/images/maps/{{ result[0].lower() }}.jpg'>
-        <h1>{{ result[0].upper().replace("_", " ") }}</h1>
+        <img src="/static/images/maps/{{ result[0]['map_name'].lower().replace(' ', '_') }}.jpg">
+        <h1>{{ result[0]['map_name'].upper().replace("_", " ") }}</h1>
       </div>
       <div class="champ">
-        <img src='/static/images/champions/r_{{ result[1].lower() }}.png'>
+        <img src="/static/images/champions/r_{{ result[1]['short_name'].lower() }}.png">
       </div>
     </div>
     {% endfor %}

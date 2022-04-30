@@ -88,12 +88,12 @@
             <h1 style="color: white; font-family: Poppins; margin-left: 30px;">Nickname action</h1>
             <div class="choice-wrapper-map">
             {% for map in game_state.maps %}
-                <label id="{{ map.name }}" class="card card-map">
+                <label id="{{ map.short_name }}" class="card card-map">
                     <div class="card-image-wrapper">
                         <img class="card-image" src="/static/images/maps/{{ map.img_url }}">
                     </div>
                     <div class="card-outer-light"></div>
-                    <input name="{{ map.name }}" type="checkbox">
+                    <input name="{{ map.map_name }}" type="checkbox">
                 </label>
             {% endfor %}
             </div>
@@ -104,12 +104,12 @@
             <h1 style="color: white; font-family: Poppins; margin-left: 30px;">Nickname action</h1>
             <div class="choice-wrapper-champ">
             {% for champ in game_state.champs %}
-                <label id="{{ champ.name }}" class="card card-champ">
+                <label id="{{ champ.short_name }}" class="card card-champ">
                     <div class="card-image-wrapper">
                         <img class="card-image" src="/static/images/champions/{{ champ.img_url }}">
                     </div>
                     <div class="card-outer-light"></div>
-                    <input name="{{ champ.name }}" type="checkbox">
+                    <input name="{{ champ.champ_name }}" type="checkbox">
                 </label>
             {% endfor %}
         </template>

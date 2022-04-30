@@ -11,9 +11,9 @@ import uuid
 from application import _DB as db, conf
 
 
-'''
+"""
 Файл моделей и логики работы с БД.
-'''
+"""
 
 # TODO Привести в порядок свойства отношений моделей. Что бы названия
 # соответствовали типам связей между таблицами.
@@ -27,29 +27,30 @@ from application import _DB as db, conf
 # TODO Обойти отсутствии поддержки uuid формата данный в SQLite.
 # Сейчас для миграции на PostgreSQL потребуется править модели
 # (при условии что мы хотим работать с нативным для PostgreSQL uuid).
+# TODO Протестировать класс MimicUUID в работе с PostgreSQL.
 
 
 class MimicUUID(TypeDecorator):
-    '''
+    """
     Прикидывается типом postgresql UUID или CHAR в
     зависимости от конфигурации приложения. 
     Небходим для совместимости приложения с PostgreSQL и SQLite.
-    '''
+    """
 
     impl = CHAR
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return dialect.type_descriptor(UUID())
         else:
             return dialect.type_descriptor(CHAR(32))
 
     def process_bind_param(self, value, dialect) -> None:
-        '''Выполняется когда мы берем из базы значение.'''
+        """Выполняется когда мы берем из базы значение."""
         if value == None:
             return value
-        elif dialect.name =='postgresql':
+        elif dialect.name =="postgresql":
             return str(value)
         else:
             if not isinstance(value, uuid.UUID):
@@ -60,7 +61,7 @@ class MimicUUID(TypeDecorator):
                 return "{uuid:32x}".format(uuid=value.int)
 
     def process_result_value(self, value, dialect) -> None:
-        '''Выполняется когда мы кладем значение в базу.'''
+        """Выполняется когда мы кладем значение в базу."""
         if value == None:
             return value
         elif not isinstance(value, uuid.UUID):
@@ -73,34 +74,29 @@ class MimicUUID(TypeDecorator):
 # ------ Модели --------------------------------------------------------
 
 class User(db.Model):
-    '''Таблица пользователей.'''
-    __tablename__ = 'users'
+    """Таблица пользователей."""
+    __tablename__ = "users"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
     nickname = db.Column(db.String(40), nullable=False)
     is_persistent = db.Column(db.Boolean, nullable=False, default=False)
 
-    rel_results = db.relationship("Result", back_populates="rel_users")
+    rel_sessions = db.relationship("Session", back_populates="rel_users")
     rel_rooms = db.relationship("Room", back_populates="rel_users")
 
     @classmethod
     def get_user(cls, nickname):
-        '''Поиск пользователя по имени, возвращает объект класса User.'''
-        try:
-            requested_user = cls.query.filter_by(nickname=nickname).first()
-            db.session.commit()
-        except:
-            # отменяем транзакцию в случае ошибки.
-            db.session.rollback()
-            raise
+        """Поиск пользователя по имени, возвращает объект класса User."""
+        requested_user = cls.query.filter_by(nickname=nickname).first()
         return requested_user
 
     @classmethod
     def create_user(cls, nickname) -> int:
-        '''Создает пользователя в таблице если необходимо и возвращает
+        """
+        Создает пользователя в таблице если необходимо и возвращает
         id пользователя.
-        '''
+        """
         # Проверяем пользователя в базе
         user_exist = bool(cls.get_user(nickname))
 
@@ -121,8 +117,8 @@ class User(db.Model):
 
 
 class Room(db.Model):
-    '''Таблица комнат'''
-    __tablename__ = 'rooms'
+    """Таблица комнат."""
+    __tablename__ = "rooms"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
@@ -130,22 +126,25 @@ class Room(db.Model):
                           default=str(uuid.uuid4()))
     # NOTE Закомментировано так как sqlite не поддерживает данный тип данных.
     # room_uuid = db.Column(UUID(as_uuid=True), server_default=text("uuid_generate_v4()")) 
-    current_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+    current_user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
                                 nullable=True)
-    current_step_id = db.Column(db.Integer, db.ForeignKey('rules.id'),
+    current_step_id = db.Column(db.Integer, db.ForeignKey("rules.id"),
                                 nullable=False)
-    seed = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=False)
+    seed = db.Column(db.Integer, db.ForeignKey("teams.id"), nullable=False)
 
-    rel_results = db.relationship("Result", back_populates="rel_rooms")
+    rel_sessions = db.relationship("Session", back_populates="rel_rooms")
     rel_rules = db.relationship("Rule", back_populates="rel_rooms")
     rel_users = db.relationship("User", back_populates="rel_rooms")
     rel_teams = db.relationship("Team", back_populates="rel_rooms")
+    rel_map_choices = db.relationship("Map_choice", back_populates="rel_rooms")
+    rel_champ_choices = db.relationship("Champ_choice", back_populates="rel_rooms")
 
     @classmethod
     def create_room(cls, seed, current_step_id) -> dict:
-        '''Создает комнату в таблице rooms и возвращает словарь
-        содержащий id и uuid комнаты. На вход принимает только int
-        '''
+        """
+        Создает комнату в таблице rooms и возвращает словарь
+        содержащий id и uuid комнаты. На вход принимает только int.
+        """
 
         # создаем комнату
         new_room = cls(seed=seed, current_step_id=current_step_id)
@@ -162,12 +161,12 @@ class Room(db.Model):
         # return {'id': new_room.id, 'uuid': new_room.room_uuid}
 
     def init_current_user(self):
-        '''Создает запись активного игрока в комнате.'''
+        """Создает запись активного игрока в комнате."""
 
         try:
-            for result in self.rel_results:
-                if result.team_id == self.seed:
-                    self.current_user_id = result.user_id
+            for session in self.rel_sessions:
+                if session.team_id == self.seed:
+                    self.current_user_id = session.user_id
                     db.session.commit()
                     break
         except:
@@ -176,17 +175,17 @@ class Room(db.Model):
             raise
 
     def _next_user(self):
-        '''Возвращает id следующего активного игрока'''
+        """Возвращает id следующего активного игрока."""
         current_user_id = self.current_user_id
-        for result in self.rel_results:
-            if result.user_id != current_user_id:
-                next_user_id = result.user_id
+        for session in self.rel_sessions:
+            if session.user_id != current_user_id:
+                next_user_id = session.user_id
 
         return next_user_id
 
 
     def next_step(self):
-        '''Меняет текущий шаг в комнате'''
+        """Меняет текущий шаг в комнате."""
         next_user_id = self._next_user()
         next_step = self.current_step_id + 1
 
@@ -198,152 +197,156 @@ class Room(db.Model):
             db.session.rollback()
             raise
 
-    def delete_room(self):
-        '''Удаляет комнату текущего класса.'''
-        try:
-            db.session.delete(self.room_uuid)
-            db.session.commit()
-        except:
-            db.session.rollback()
-            raise
-        return True
-
-    def create_result(self, user_id, team_id):
-        '''
-        Создает результат в комнате. Используется при создании комнаты
+    def create_session(self, user_id, team_id):
+        """
+        Создает сессию подключения к комнате. Используется при создании комнаты
         и при подключении к ней. Воозвращает id нового результата.
-        '''
+        """
 
-        # Проверка на заполненость комнаты
-        results = self.get_results()
-        
+        # Проверка на заполненость комнаты.
+        sessions = self.get_sessions()
         # TODO assert???
-        if len(results) > 1:
-            raise Exception('Комната уже заполнена')
+        if len(sessions) > 1:
+            raise Exception("Комната уже заполнена.")
 
-        # создаем результат
-        new_result = Result(user_id=user_id, room_id=self.id,
-                            team_id=team_id)
+        # Создаем сессию.
+        new_session = Session(user_id=user_id, room_id=self.id,
+                              team_id=team_id)
         
         try:
-            db.session.add(new_result)
+            db.session.add(new_session)
             db.session.commit()
         except:
-            # отменяем транзакцию в случае ошибки.
+            # Отменяем транзакцию в случае ошибки.
             db.session.rollback()
             raise
-        return new_result.id
+        return new_session.id
 
-    def get_results(self):
-        '''Возвращает список всех результатов в комнате'''
+    def get_sessions(self):
+        """Возвращает список сессий комнаты."""
 
-        results = [result for result in self.rel_results]
-        return results
+        sessions = [session for session in self.rel_sessions]
+        return sessions
 
-    def get_result(self, user_id):
-        '''Ищет результат в комнате по id игрока.
-        Возвращает экземпляр класса Result
-        '''
+    def get_session(self, user_id):
+        """
+        Ищет результат в комнате по id игрока.
+        Возвращает экземпляр класса Session.
+        """
 
-        for result in self.rel_results:
-            if result.user_id == user_id:
-                return result
+        for session in self.rel_sessions:
+            if session.user_id == user_id:
+                return session
 
 
-    def update_result(self, action, object_type, choice):
-        '''Вносит в базу выбор игрока'''
+    def save_choice(self, nickname, action, object_type, choice, map_name=None):
+        """Вносит в базу выбор игрока."""
 
-        result = self.get_result(user_id=self.current_user_id)
-
-        if not result:
-            # если нет такой комнаты или пользователя
-            raise Exception('Запрошенного результата не существует.')
-
+        # Проверяем валидность игрока.
+        if nickname != self.rel_users.nickname:
+            raise Exception("Ваша очередь еще не наступила.")
+        
         current_object_type = self.rel_rules.rel_object_types
         current_action = self.rel_rules.rel_actions
-        
-        # Проверяем совпадение активного действия в комнате
+
+        # Проверяем совпадение активного действия в комнате.
         if current_action.name != action:
-            raise Exception(f'Вы выполняете не верное действие: {action}')
-        
-        # Проверяем совпадение активного типа в комнате
+            raise Exception(f"Вы выполняете не верное действие: {action}")
+
+        # Проверяем совпадение активного типа в комнате.
         if current_object_type.name != object_type:
             raise Exception((
-                'Вы запрашиваете действие над не верным типом объекта: '
+                "Вы запрашиваете действие над не верным типом объекта: "
                 f'{current_object_type}'
             ))
-
         
-        # Получаем название поля для изменения
-        field_to_update = f"{object_type}_{action}s"
+        # Определяем id выбранного объекта.
+        if object_type == "map":
+            choices = self.rel_map_choices
+        elif object_type == "champ":
+            choices = self.rel_champ_choices
+        object_id = [obj.id for obj in choices if obj.shorname == choice][0]
 
-        # Поля которые нам может понадобиться изменять
-        fields = {
-            "map_bans": Result.map_bans,
-            "map_picks": Result.map_picks,
-            "champ_bans": Result.champ_bans,
-            "champ_picks": Result.champ_picks
-        }
+        # Определяем id сессии.
+        for session in self.rel_sessions:
+            if session.rel_users.nickname == nickname:
+                session_id = session.id
+            else:
+                raise Exception(
+                    "Сессии для указанного имени игрока не существует."
+                )
 
-        already_chosen = []
-        if result.__dict__[field_to_update]:
-            for item in result.__dict__[field_to_update]:
-                already_chosen.append(item)
-            
-            # Добавляем новое значение
-            already_chosen.append(choice)
+        new_choice = None
+        if current_object_type.name == "map":
+            # Вставляем значения в таблицу map_choices.
+            new_choice = Map_choice(
+                room_id = self.id,
+                object_id = object_id,
+                action_id = self.rel_rules.rel_actions.id,
+                session_id = session_id
+            )
 
-            db.session.query(Result)\
-                .filter(Result.id == result.id)\
-                .update({fields[field_to_update]: already_chosen})
-        else:
-            db.session.query(Result)\
-                .filter(Result.id == result.id)\
-                .update({fields[field_to_update]: [choice]})
+        elif current_object_type.name == "champ":
+            # Определяем id карты для которой производился выбор.
+            for map_choice in self.rel_map_choices:
+                if map_choice.shortname == map_name:
+                    map_id = map_choice.id
+                else:
+                    raise Exception(
+                        f"{map_name} отсутствует в таблице выбранных карт."
+                    )
+            # Вставляем значения в таблицу champ_choices.
+            new_choice = Champ_choice(
+                room_id = self.id,
+                object_id = object_id,
+                action_id = self.rel_rules.rel_actions.id,
+                map_choice_id = map_id,
+                session_id = session_id
+            )
 
-        try:
-            db.session.commit()
-        except:
-            # отменяем транзакцию в случае ошибки.
-            db.session.rollback()
-            raise
+        if new_choice:
+            db.session.add(new_choice)
+            try:
+                db.session.commit()
+            except:
+                db.session.rollback()
+                raise
+            return True
 
-        return True
 
-
-class Result(db.Model):
-    '''Таблица результатов.'''
-    __tablename__ = 'results'
+class Session(db.Model):
+    """Таблица результатов."""
+    __tablename__ = "sessions"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
-    room_id = db.Column(db.Integer,db.ForeignKey('rooms.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    team_id = db.Column(db.Integer,db.ForeignKey('teams.id'), nullable=False)
+    room_id = db.Column(db.Integer,db.ForeignKey("rooms.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    team_id = db.Column(db.Integer,db.ForeignKey("teams.id"), nullable=False)
 
-    rel_users = db.relationship("User", back_populates="rel_results")
-    rel_rooms = db.relationship("Room", back_populates="rel_results")
-    rel_teams = db.relationship("Team", back_populates="rel_results")
+    rel_users = db.relationship("User", back_populates="rel_sessions")
+    rel_rooms = db.relationship("Room", back_populates="rel_sessions")
+    rel_teams = db.relationship("Team", back_populates="rel_sessions")
     rel_map_choices = db.relationship("Map_choice",
-                                      back_populates="rel_results")
+                                      back_populates="rel_sessions")
     rel_champ_choices = db.relationship("Champ_choice",
-                                        back_populates="rel_results")
+                                        back_populates="rel_sessions")
 
 
 class Rule(db.Model):
-    '''Таблица правил.'''
-    __tablename__ = 'rules'
+    """Таблица правил."""
+    __tablename__ = "rules"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
-                                 autoincrement=True)
+                   autoincrement=True)
     step = db.Column(db.Integer, nullable=False) # Порядковый номер шага игры
-    game_mode_id = db.Column(db.Integer, db.ForeignKey('game_modes.id'),
+    game_mode_id = db.Column(db.Integer, db.ForeignKey("game_modes.id"),
                              nullable=False)
-    bo_type_id = db.Column(db.Integer, db.ForeignKey('bo_types.id'),
+    bo_type_id = db.Column(db.Integer, db.ForeignKey("bo_types.id"),
                            nullable=False)
-    object_type_id = db.Column(db.Integer, db.ForeignKey('object_types.id'),
+    object_type_id = db.Column(db.Integer, db.ForeignKey("object_types.id"),
                                nullable=False)
-    action_id = db.Column(db.Integer, db.ForeignKey('actions.id'),
+    action_id = db.Column(db.Integer, db.ForeignKey("actions.id"),
                           nullable=False)
 
     rel_game_modes = db.relationship("Game_mode", back_populates="rel_rules")
@@ -355,11 +358,12 @@ class Rule(db.Model):
 
 
 class Action(db.Model):
-    '''Таблица действий. Ban, pick, wait, end. Wait необходим для того что бы
-    сказать фронту что нужно подождать второго игрока. End для того что бы
-    закончить игру и вывести результат
-    '''
-    __tablename__ = 'actions'
+    """
+    Таблица действий. Ban, pick, wait, end. Wait необходим для того что бы
+    сказать фронту что нужно подождать второго игрока. End что бы
+    закончить игру и вывести результат.
+    """
+    __tablename__ = "actions"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
@@ -373,10 +377,11 @@ class Action(db.Model):
 
 
 class Bo_type(db.Model):
-    '''Таблица типов игр по колическу карт в матче.
+    """
+    Таблица типов игр по колическу карт в матче.
     Содержит bo1, bo3, bo5, bo7
-    '''
-    __tablename__ = 'bo_types'
+    """
+    __tablename__ = "bo_types"
     
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
@@ -386,12 +391,12 @@ class Bo_type(db.Model):
 
 
 class Current_season(db.Model):
-    '''Таблица карт доступных в текущем сезоне.'''
-    __tablename__ = 'current_season'
+    """Таблица карт доступных в текущем сезоне."""
+    __tablename__ = "current_season"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
-    object_id = db.Column(db.Integer,db.ForeignKey('objects.id'),
+    object_id = db.Column(db.Integer,db.ForeignKey("objects.id"),
                           nullable=False)
 
     rel_objects = db.relationship("Object",
@@ -399,8 +404,8 @@ class Current_season(db.Model):
 
 
 class Game_mode(db.Model):
-    '''Таблица режимов игры. Содержит duel и tdm.'''
-    __tablename__ = 'game_modes'
+    """Таблица режимов игры. Содержит duel и tdm."""
+    __tablename__ = "game_modes"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
@@ -411,8 +416,8 @@ class Game_mode(db.Model):
 
 
 class Object_type(db.Model):
-    '''Таблица типов объектов. Содержит в себе 2 типа: карты и чемпионы'''
-    __tablename__ = 'object_types'
+    """Таблица типов объектов. Содержит в себе 2 типа: карты и чемпионы."""
+    __tablename__ = "object_types"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
@@ -422,16 +427,15 @@ class Object_type(db.Model):
     rel_rules = db.relationship("Rule", back_populates="rel_object_types")
 
 
-
 class Object(db.Model):
-    '''
+    """
     Таблица объектов. Содержит в себе все карты и всех чемпионов.
-    '''
-    __tablename__ = 'objects'
+    """
+    __tablename__ = "objects"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
-    type = db.Column(db.Integer, db.ForeignKey('object_types.id'),
+    type = db.Column(db.Integer, db.ForeignKey("object_types.id"),
                      nullable=False)
     name = db.Column(db.String(40), nullable=False)
     shortname = db.Column(db.String(10), nullable=False)
@@ -447,59 +451,63 @@ class Object(db.Model):
                                         back_populates="rel_objects")
 
 
-
 class Team(db.Model):
-    '''Таблица команд. Пока только blue и red.'''
-    __tablename__ = 'teams'
+    """Таблица команд. Пока только blue и red."""
+    __tablename__ = "teams"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
-    rel_results = db.relationship("Result", back_populates="rel_teams")
+    rel_sessions = db.relationship("Session", back_populates="rel_teams")
     rel_rooms = db.relationship("Room", back_populates="rel_teams")
 
 
 
 class Map_choice(db.Model):
-    '''Таблица выбора игроков'''
-    __tablename__ = 'map_choices'
+    """Таблица выбора игроков."""
+    __tablename__ = "map_choices"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
-    result_id = db.Column(db.Integer, db.ForeignKey('results.id'),
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"),
                           nullable=False)
-    object_id = db.Column(db.Integer, db.ForeignKey('objects.id'),
+    object_id = db.Column(db.Integer, db.ForeignKey("objects.id"),
                           nullable=False)
-    action_id = db.Column(db.Integer, db.ForeignKey('actions.id'),
+    action_id = db.Column(db.Integer, db.ForeignKey("actions.id"),
                           nullable=False)
+    room_id = db.Column(db.Integer, db.ForeignKey("rooms.id"),
+                        nullable=False)
 
-    rel_results = db.relationship("Result", back_populates="rel_map_choices")
+    rel_sessions = db.relationship("Session", back_populates="rel_map_choices")
     rel_objects = db.relationship("Object", back_populates="rel_map_choices")
     rel_actions = db.relationship("Action", back_populates="rel_map_choices")
+    rel_rooms = db.relationship("Room", back_populates="rel_map_choices")
     rel_champ_choices = db.relationship("Champ_choice",
                                         back_populates="rel_map_choices")
 
 
-
 class Champ_choice(db.Model):
-    '''Таблица выбора игроков'''
-    __tablename__ = 'champ_choices'
+    """Таблица выбора игроков."""
+    __tablename__ = "champ_choices"
 
     id = db.Column(db.Integer, nullable=False, unique=True, primary_key=True,
                    autoincrement=True)
-    result_id = db.Column(db.Integer, db.ForeignKey('results.id'),
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"),
                           nullable=False)
-    object_id = db.Column(db.Integer, db.ForeignKey('objects.id'),
+    object_id = db.Column(db.Integer, db.ForeignKey("objects.id"),
                           nullable=False)
-    action_id = db.Column(db.Integer, db.ForeignKey('actions.id'),
+    action_id = db.Column(db.Integer, db.ForeignKey("actions.id"),
                           nullable=False)
-    map_choice_id = db.Column(db.Integer, db.ForeignKey('map_choices.id'),
+    map_choice_id = db.Column(db.Integer, db.ForeignKey("map_choices.id"),
                               nullable=False)
+    room_id = db.Column(db.Integer, db.ForeignKey("rooms.id"),
+                        nullable=False)
 
-    rel_results = db.relationship("Result", back_populates="rel_champ_choices")
+    rel_sessions = db.relationship("Session", back_populates="rel_champ_choices")
     rel_objects = db.relationship("Object", back_populates="rel_champ_choices")
     rel_actions = db.relationship("Action", back_populates="rel_champ_choices")
+    rel_rooms = db.relationship("Room", back_populates="rel_champ_choices")
     rel_map_choices = db.relationship("Map_choice",
                                       back_populates="rel_champ_choices")
 
@@ -507,10 +515,11 @@ class Champ_choice(db.Model):
 # ------ Функции основные ----------------------------------------------
 
 def start_game(nickname, seed, current_step_id) -> dict:
-    '''Создает пользователя если необходимо, создает комнату и результат
+    """
+    Создает пользователя если необходимо, создает комнату и результат
     для пользователя создавшего комнату. Возвращает словарь основных
     параметров игры для передачи его фронту.
-    '''
+    """
 
     # Создаем пользователя.
     user = User(nickname=nickname)
@@ -522,21 +531,22 @@ def start_game(nickname, seed, current_step_id) -> dict:
     db.session.add(room)
     db.session.commit()
 
-    # Создаем результат пользователя создавшего игру.
-    room.create_result(user_id=user.id, team_id=1)
+    # Создаем сессию пользователя создавшего игру.
+    room.create_session(user_id=user.id, team_id=1)
     
     # Забираем из типа UUID только строковое представление этого uuid.
     # NOTE Закомментировано так как sqlite не поддерживает данный тип данных.
     # room_uuid = room.room_uuid.urn.split(':')[-1]
     room_uuid = room.room_uuid
 
-    return {'room_uuid': room_uuid, 'nickname': nickname}
+    return {"room_uuid": room_uuid, "nickname": nickname}
 
 def join_room(nickname, room_uuid) -> dict:
-    '''Создает пользователя если необходимо, проверяет существование
+    """
+    Создает пользователя если необходимо, проверяет существование
     комнаты создает результат для подключающегося пользователя.
     True или False в зависимости от успеха операции.
-    '''
+    """
 
     # Получаем комнату по uuid
     # NOTE При переходе на postgresql функцию str надо убрать.
@@ -545,13 +555,13 @@ def join_room(nickname, room_uuid) -> dict:
     
     # Проверка на существование комнаты
     if not room:
-        raise Exception('Этой комнаты не существует в базе данных')
+        raise Exception("Этой комнаты не существует в базе данных.")
 
     # Создаем пользователя
     user = User.create_user(nickname=nickname)
     
     # Создаем результат подключающегося пользователя
-    result_id = room.create_result(user_id=user.id, team_id=2)
+    session_id = room.create_session(user_id=user.id, team_id=2)
     
     # Инициализируем текущего активного игрока в комнате
     room.init_current_user()
@@ -561,7 +571,7 @@ def join_room(nickname, room_uuid) -> dict:
     # room_uuid = room.room_uuid.urn.split(':')[-1]
     room_uuid = room.room_uuid
 
-    if result_id == None:
+    if session_id == None:
         return False
 
     return True
@@ -572,18 +582,18 @@ def join_room(nickname, room_uuid) -> dict:
 # ------ Функции вспомогательные ---------------------------------------
 
 def delete_room(room_uuid):
-    '''Удаляет комнату и результат по заданным room_uuid'''
+    """Удаляет комнату и результат по заданным room_uuid."""
     
     # получаем вхождения которые надо удалить
     room = db.session.query(Room).filter_by(room_uuid=room_uuid).first()
 
     if not room:
-        print('Nothing to delete')
+        print("Нечего удалять.")
         return True
-    elif room.rel_results:
-        for result in room.rel_results:
+    elif room.rel_sessions:
+        for session in room.rel_sessions:
             try:
-                db.session.delete(result)
+                db.session.delete(session)
                 db.session.commit()
             except:
                 db.session.rollback()
@@ -592,125 +602,15 @@ def delete_room(room_uuid):
     room.delete_room(room_uuid=room_uuid)
     return True
 
-"""
+
 def generate_report(room_uuid):
-    '''Генерирут полный отчет о состоянии игры в JSON формате'''
+    """Генерирут полный отчет о состоянии игры в JSON формате."""
     
     # Получаем инфу по комнате и по доступным картам.
     room = db.session.query(Room).filter_by(room_uuid=room_uuid).first()
 
     # Получаем список доступных героев.
-    condition = {'type': 2}
-    champions = db.session.query(Object).filter_by(**condition).all()
-    
-    # Получаем список доступных карт.
-    season_maps = db.session.query(Current_season).all()
-    maps = [map.rel_objects for map in season_maps]
-
-    # Генерим инфу по игрокам
-    player_state = {}
-    player_states = []
-    current_game_state = {}
-    for result in room.rel_results:
-        player_state['nickname'] = result.rel_users.nickname
-        player_state['team'] = result.team_id
-        if result.rel_map_choices != None:
-            for map_choice in result.rel_map_choices:
-                player_state['map_choices'] = {
-                    "bans": [],
-                    "picks": []
-                }
-                if map_choice.action_id == 2:
-                    player_state['map_choices']['bans'].append(
-                        {
-                            'map_name': map_choice.rel_objects.name,
-                            'img_url': map_choice.rel_objects.img_url,
-                            'short_name': map_choice.rel_objects.short_name,
-                            'champ_choices': []
-                        }
-                    )
-                elif champ_choice.action_id == 1:
-                    player_state['map_choices']['bans'].append(
-                        {
-                            'map_name': map_choice.rel_objects.name,
-                            'img_url': map_choice.rel_objects.img_url,
-                            'short_name': map_choice.rel_objects.short_name,
-                            'champ_choices': {'bans', 'picks'}
-                        }
-                    )
-                if map_choice.rel_champ_choices != None:
-                    for champ_choice in map_choice.rel_champ_choices:
-                        if champ_choice.action_id == 2:
-                            player_state['map_choices']['bans']['champ_choices']['bans']
-                        elif champ_choice.action_id == 1:
-                            pass
-                        
-            # player_state['map_choices'] = [
-            #     obj for obj in result.map_picks
-            # ]
-        else:
-            player_state['map_picks'] = []
-
-        if result.map_bans != None:
-            player_state['map_bans'] = [
-                obj for obj in result.map_bans
-            ]
-        else:
-            player_state['map_bans'] = []
-
-        if result.champ_picks != None:
-            player_state['champ_picks'] = [
-                obj for obj in result.champ_picks
-            ]
-        else:
-            player_state['champ_picks'] = []
-
-        if result.champ_bans != None:
-            player_state['champ_bans'] = [
-                obj for obj in result.champ_bans
-            ]
-        else:
-            player_state['champ_bans'] = []
-
-        player_states.append(player_state)
-        player_state = {}
-
-    # Генерим инфу по комнате
-    current_game_state['current_action'] = room.rel_rules.rel_actions.name
-    current_game_state['players'] = player_states
-    current_game_state['room_uuid'] = room_uuid
-    current_game_state['seed'] = room.seed
-
-    current_game_state['maps'] = [
-        {
-            "name": map.name,
-            "img_url": map.img_url
-        } for map in maps if map.type==1
-    ]
-    current_game_state['champs'] = [
-        {"name": champ.name, "img_url": champ.img_url} for champ in champions
-    ]
-
-    if room.rel_users != None:
-        current_game_state['current_player'] = room.rel_users.nickname
-    else:
-        current_game_state['current_player'] = ''
-
-    current_game_state['current_object'] = room.rel_rules.rel_object_types.name
-    current_game_state['step'] = room.rel_rules.step
-
-    return current_game_state
-"""
-
-
-def generate_report(room_uuid):
-    '''Генерирут полный отчет о состоянии игры в JSON формате'''
-    
-    # Получаем инфу по комнате и по доступным картам.
-    room = db.session.query(Room).filter_by(room_uuid=room_uuid).first()
-
-    # Получаем список доступных героев.
-    condition = {'type': 2}
+    condition = {"type": 2}
     champs = db.session.query(Object).filter_by(**condition).all()
     
     # Получаем список доступных карт.
@@ -724,14 +624,16 @@ def generate_report(room_uuid):
         actual_maps = [
             {
                 "map_name": map.name,
-                "img_url": map.img_url
+                "img_url": map.img_url,
+                "short_name": map.shortname
             } for map in maps
         ]
 
         actual_champs = [
             {
                 "champ_name": champ.name,
-                "img_url": champ.img_url
+                "img_url": champ.img_url,
+                "short_name": champ.shortname,
             } for champ in champs
         ]
         
@@ -746,11 +648,12 @@ def generate_report(room_uuid):
             "players": []
         }
 
-    def get_champ_choice_report(champ_name, short_name, img_url):
+    def get_champ_choice_report(champ_name, short_name, img_url, map_name):
         return {
             "champ_name": champ_name,
             "img_url": img_url,
-            "short_name": short_name
+            "short_name": short_name,
+            "map_name": map_name
         }
 
     def get_map_choice_report(map_name, short_name, img_url):
@@ -771,129 +674,124 @@ def generate_report(room_uuid):
             "map_choices": {
                 "bans": [],
                 "picks": []
+            },
+            "champ_choices": {
+                "bans": [],
+                "picks": []
             }
         }
 
-    
-    try:
-        params = [
-            room_uuid,
-            room.rel_rules.rel_actions.name,
-            room.rel_users.nickname,
-            room.rel_rules.rel_object_types.name,
-            room.seed,
-            maps,
-            champs
-        ]
-    except AttributeError:
-        params = [
-            room_uuid,
-            room.rel_rules.rel_actions.name,
-            None,
-            room.rel_rules.rel_object_types.name,
-            room.seed,
-            maps,
-            champs
-        ] 
-    
-    report = get_room_report(*params)
+    # Проверка на наличие текущего игрока в комнате.
+    if not room.rel_users:
+        raise Exception(
+            "Текущий игрок еще не определен. Ожидаем второго игрока."
+        )
+
+    report = get_room_report(
+        room_uuid = room_uuid,
+        current_action = room.rel_rules.rel_actions.name,
+        current_player = room.rel_users.nickname,
+        current_object = room.rel_rules.rel_object_types.name,
+        seed = room.seed,
+        maps = maps,
+        champs = champs
+    )
+
+    map_choices = room.rel_map_choices
+    champ_choices = room.rel_champ_choices
 
     player_reports = []
-    for result in room.rel_results:
+    for session in room.rel_sessions:
 
         map_picks = []
         map_bans = []
-
-        # Получаем выбранную или забаненую карту.
-        for map_choice in result.rel_map_choices:
-
-            champ_picks = []
-            champ_bans = []
-            
-            # Если карта выбрана то смотрим еще и чемпионов.
+        # Получаем выбранные и забаненые карты.
+        for map_choice in session.rel_map_choices:
+            map_choice_report = get_map_choice_report(
+                map_choice.rel_objects.name,
+                map_choice.rel_objects.shortname,
+                map_choice.rel_objects.img_url,
+            )
+            # Добавляем к списку выбранных карт.
             if map_choice.action_id == 1:
-
-                # Получаем списки выбраных и забаненых персонажей для карты.                
-                for champ_choice in map_choice.rel_champ_choices:
-
-                    if champ_choice.action_id == 1:
-                        champ_picks.append(get_champ_choice_report(
-                            champ_choice.rel_objects.name,
-                            champ_choice.rel_objects.img_url,
-                            champ_choice.rel_objects.short_name
-                        ))
-
-                    elif champ_choice.action_id == 2:
-                        champ_bans.append(get_champ_choice_report(
-                            champ_choice.rel_objects.name,
-                            champ_choice.rel_objects.img_url,
-                            champ_choice.rel_objects.short_name
-                        ))
-
-                # Генерируем пик карты.
-                map_choice_report = get_map_choice_report(
-                    map_choice.rel_objects.name,
-                    map_choice.rel_objects.img_url,
-                    map_choice.rel_objects.shortname,
-                )
-
-                # Добавляем в отчет карты и чемпионов.
-                map_choice_report["champ_choices"]["picks"] = champ_picks
-                map_choice_report["champ_choices"]["bans"] = champ_bans
-
-                # Добавляем к списку выбранных карт.
                 map_picks.append(map_choice_report)
-
-
-            # Если бан то выборка чемпионов не требуется.
+            # Добавляем к списку забанены карт.
             elif map_choice.action_id == 2:
-
-                # Генерируем бан карты.
-                map_choice_report = get_map_choice_report(
-                    map_choice.rel_objects.name,
-                    map_choice.rel_objects.img_url,
-                    map_choice.rel_objects.shortname,
-                )
-            
-                # Добавляем к списку забанены карт.
                 map_bans.append(map_choice_report)
+
+        champ_picks = []
+        champ_bans = []
+        # Получаем выбранного и забаненого чемпиона.
+        if session.rel_champ_choices:
+            for champ_choice in session.rel_champ_choices:
+                # Получаем название карты для которой был выбран чемпион.
+                if champ_choice.rel_map_choices:
+                    for map_choice in champ_choice.rel_map_choices:
+                        champ_choice_report = get_champ_choice_report(
+                            champ_choice.rel_objects.name,
+                            champ_choice.rel_objects.shortname,
+                            champ_choice.rel_objects.img_url,
+                            map_choice.shortname
+                        )
+                        # Добавляем к списку выбранных чемпионов.
+                        if champ_choice.action_id == 1:
+                            champ_picks.append(champ_choice_report)
+                        # Добавляем к списку выбранных чемпионов.
+                        elif champ_choice.action_id == 2:
+                            champ_bans.append(champ_choice_report)
+                else:
+                    map_choice = db.session.query(Object).filter_by(
+                        id=champ_choice.map_choice_id).first()
+                    champ_choice_report = get_champ_choice_report(
+                        champ_choice.rel_objects.name,
+                        champ_choice.rel_objects.shortname,
+                        champ_choice.rel_objects.img_url,
+                        map_choice.shortname
+                    )
+                    # Добавляем к списку выбранных чемпионов.
+                    if champ_choice.action_id == 1:
+                        champ_picks.append(champ_choice_report)
+                    # Добавляем к списку выбранных чемпионов.
+                    elif champ_choice.action_id == 2:
+                        champ_bans.append(champ_choice_report)
 
         # Склеиваем отчет для одного игрока.
         player_report = get_player_report(
-            result.rel_users.nickname,
-            result.rel_teams.name
+            session.rel_users.nickname,
+            session.rel_teams.name
         )
         player_report["map_choices"]["picks"] = map_picks
         player_report["map_choices"]["bans"] = map_bans
+        player_report["champ_choices"]["picks"] = champ_picks
+        player_report["champ_choices"]["bans"] = champ_bans
         
         # Добавляем в список отчетов игроков.
         player_reports.append(player_report)
 
     report["players"] = player_reports
-
     return report
 
 
 # Функции самотестирования.
 def self_db_rebuild(force=False):
-    ''''''
+    """Удаляет все таблицы базы данных и создает их заново."""
     if not force:
         answer = input(
             (
-                'Это действие приведет к полной потере данных.'
-                'Вы действительно хотите перестроить все таблицы? [N]/Y '
-            ) or 'N'
+                "Это действие приведет к полной потере данных."
+                "Вы действительно хотите перестроить все таблицы? [N]/Y "
+            ) or "N"
         )
-        if answer.capitalize() != 'Y':
-            print('Прервано пользователем.')
+        if answer.capitalize() != "Y":
+            print("Прервано пользователем.")
             exit()
 
     # NOTE на postgresql пока не тестировалось поэтому такое условие, 
     # после тестирования на postgres его можно удалить.
-    if conf['db_engine'] == 'sqlite':
-        print('[ DROP ] Удаляю все таблицы.')
+    if conf["db_engine"] == "sqlite":
+        print("[ DROP ] Удаляю все таблицы.")
         db.drop_all()
-        print('[ CREATE ] Создаю таблицы.')
+        print("[ CREATE ] Создаю таблицы.")
         db.create_all()
 
         import misc
@@ -908,29 +806,26 @@ def self_db_rebuild(force=False):
             (misc.rules, Rule)
         )
         for table in tables:
-            print(f'[ INSERT ] Заполняю таблицу {table[1].__tablename__}')
+            print(f"[ INSERT ] Заполняю таблицу {table[1].__tablename__}")
             for row in table[0]:
                 db.session.add(table[1](**row))
                 db.session.commit()
 
 
 if __name__ == "__main__":
-
-    if 'rebuild' in sys.argv:
-
-        if 'force' in sys.argv:
+    if "rebuild" in sys.argv:
+        if "force" in sys.argv:
             self_db_rebuild(force=True)
-        
-        self_db_rebuild()
-        
-    
+        else:
+            self_db_rebuild()
     else:
         # TODO может добавить сюда выполнение unittest'ов?
-        User.create_user('wilson')
-        User.create_user('bulkin')
+        User.create_user("wilson")
+        User.create_user("bulkin")
         
         room = db.session.query(Room).filter_by(id=1).first()
         if not room:
             room = Room.create_room(seed=1, current_step_id=1)
-        
+
+        champ_choice = db.session.query(Champ_choice).filter_by(id=1).first()
         pprint(generate_report(room.room_uuid))

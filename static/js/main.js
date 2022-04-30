@@ -1,6 +1,10 @@
 import {updatePage} from "/static/js/utils.js"
 import {testSocket} from "/static/js/ws.js"
 
+// Включаем строгий режим.
+"use strict"
+
+
 /*
 * Режим работы - xhr.
   - Регистрируем запрос данных раз в 5 секунд.
@@ -43,10 +47,10 @@ if (appMode === "xhr") {
 
 
 // Всякая хрень.
-window.onload = (event) => {
-  function play() {
-    let snd = document.getElementById("snd")
-    snd.play();
-  }
-  play()
-};
+// window.onload = (event) => {
+//   function play() {
+//     let snd = document.getElementById("snd")
+//     snd.play();
+//   }
+//   play()
+// };

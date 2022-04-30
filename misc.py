@@ -21,6 +21,7 @@
 object_types = (
     {"name": "map"},
     {"name": "champ"},
+    {"name": "result"}
 )
 
 objects = (
@@ -103,6 +104,7 @@ rules = (
     {"step": 14, "game_mode_id": 1, "bo_type_id": 1, "object_type_id": 2, "action_id": 2},
     {"step": 15, "game_mode_id": 1, "bo_type_id": 1, "object_type_id": 2, "action_id": 1},
     {"step": 16, "game_mode_id": 1, "bo_type_id": 1, "object_type_id": 2, "action_id": 1},
+    {"step": 17, "game_mode_id": 1, "bo_type_id": 1, "object_type_id": 3, "action_id": 3},
 )
 
 current_game_state_model = {
