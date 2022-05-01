@@ -3,7 +3,7 @@ import json
 from flask import render_template, url_for, redirect, request
 
 from forms import CreateForm, JoinForm
-from models import Room, generate_report, start_game, join_room
+from models import Room, generate_report, start_game, join_game
 from application import app
 from application import _JSONRPC as jsonrpc
 from application import _SOCK as sock
@@ -65,7 +65,7 @@ def join(room_uuid):
         room_uuid = str(room_uuid)
         
         # Подключаемся к комнате, создавая пользователя и его результата
-        operation_result = join_room(**form_data)
+        operation_result = join_game(**form_data)
 
         # game_state = generate_report(room_uuid)
 

@@ -151,7 +151,7 @@ class Room(db.Model):
     @classmethod
     def create_room(cls, seed, current_step_id):
         """
-        Создает комнату и возвращает ее инстанс.
+        Создает комнату и возвращает ее экземпляр.
         На вход принимает только int.
         """
         room = cls(seed=seed, current_step_id=current_step_id)
@@ -189,7 +189,7 @@ class Room(db.Model):
         return next_user_id
 
 
-    def next_step(self):
+    def _next_step(self):
         """Меняет текущий шаг в комнате."""
         next_user_id = self._next_user()
         next_step = self.current_step_id + 1
@@ -242,15 +242,23 @@ class Room(db.Model):
                 return session
 
     def save_choice(self, nickname, action, object_type,
-                    choice, map_name=None):
-        """Вносит в базу выбор игрока."""
+                    choice_sname, map_sname=None):
+        """
+        Вносит в базу выбор игрока.
+            Параметры:
+                `nickname` (str): ник игрока сделавшего выбор.
+                `action` (str): действие которое совершает игрок.
+                `object_type` (str): тип объекта над которым совершается действие.
+                `choice` (str): короткое имя объекта (short_name)
+                `map_name` (str): имя карты для которой выбирается чемпион.
+        """
 
         # Проверяем валидность игрока.
         if nickname != self.rel_user.nickname:
             raise Exception(f"Очередь игрока '{nickname}' еще не наступила.")
         
-        current_object_type = self.rel_rule.rel_object_types
-        current_action = self.rel_rule.rel_actions
+        current_object_type = self.rel_rule.rel_object_type
+        current_action = self.rel_rule.rel_action
 
         # Проверяем совпадение активного действия в комнате.
         if current_action.name != action:
@@ -263,20 +271,29 @@ class Room(db.Model):
                 f"'{current_object_type}'"
             ))
         
-        # Определяем id выбранного объекта.
+        # --- Определяем id выбранного объекта.
+        # Значения в БД хранятся в uppercase.
+        choice_sname = choice_sname.upper()
+
+        # Выбираем объект для итерирования.
         if object_type == "map":
             choices = self.rel_map_choices
         elif object_type == "champ":
             choices = self.rel_champ_choices
-        object_id = [obj.id for obj in choices if obj.shorname == choice][0]
+
+        object_id = Object.get_obj_by_sname(choice_sname).id
 
         # Определяем id сессии.
         for session in self.rel_sessions:
             if session.rel_user.nickname == nickname:
                 session_id = session.id
+                break
             else:
-                raise Exception(
-                    "Сессии для указанного имени игрока не существует.")
+                session_id = None
+
+        if not session_id:
+            raise Exception(
+                "Сессии для указанного имени игрока не существует.")
 
         choice = None
         if current_object_type.name == "map":
@@ -284,19 +301,24 @@ class Room(db.Model):
             choice = Map_choice(
                 room_id = self.id,
                 object_id = object_id,
-                action_id = self.rel_rules.rel_actions.id,
+                action_id = self.rel_rule.rel_action.id,
                 session_id = session_id
             )
 
         elif current_object_type.name == "champ":
+            map_sname = map_sname.upper()
             # Определяем id карты для которой производился выбор.
             for map_choice in self.rel_map_choices:
-                if map_choice.short_name == map_name:
+                if map_choice.rel_object.short_name == map_sname:
                     map_id = map_choice.id
+                    break
                 else:
-                    raise Exception(
-                        f"'{map_name}' отсутствует в таблице выбранных карт,"
-                    )
+                    map_id = None
+
+            if not map_id:
+                raise Exception(
+                    f"'{map_sname}' отсутствует в таблице выбранных карт,"
+                )
             # Вставляем значения в таблицу champ_choices.
             choice = Champ_choice(
                 room_id = self.id,
@@ -313,7 +335,9 @@ class Room(db.Model):
             except:
                 db.session.rollback()
                 raise
-            return True
+
+        # Добавляем шаг ходу игры.
+        self._next_step()
 
 
 class Session(db.Model):
@@ -483,7 +507,15 @@ class Object(db.Model):
         """Получает список чемпионов."""
         maps = Current_season.get_objects()
         return maps
-        
+
+    @classmethod
+    def get_obj_by_sname(cls, short_name):
+        """
+        Получает экземпляр класса `Object` по короткому имени объекта.
+        """
+        obj = db.session.query(cls).filter_by(short_name=short_name).first()
+        return obj
+
 
 class Team(db.Model):
     """Таблица команд. Пока только blue и red."""
@@ -553,18 +585,17 @@ class Champ_choice(db.Model):
 
 # ------ Функции основные ----------------------------------------------
 
-def start_game(nickname, seed, current_step_id) -> dict:
+def start_game(nickname, seed) -> dict:
     """
     Создает пользователя если необходимо, создает комнату и сессию
-    пользователя создавшего комнату. Возвращает словарь с room_uuid и
-    nickname.
+    пользователя создавшего комнату. Возвращает экземпляр класса Room.
     """
 
     # Создаем пользователя.
     user = User.create_user(nickname=nickname)
     
     # Создаем комнату.
-    room = Room.create_room(seed=seed, current_step_id=current_step_id)
+    room = Room.create_room(seed=seed, current_step_id=1)
 
     # Создаем сессию пользователя создавшего игру.
     room.create_session(user_id=user.id, team_id=1)
@@ -572,12 +603,12 @@ def start_game(nickname, seed, current_step_id) -> dict:
     # Забираем из типа UUID только строковое представление этого uuid.
     # NOTE Закомментировано так как sqlite не поддерживает данный тип данных.
     # room_uuid = room.room_uuid.urn.split(':')[-1]
-    room_uuid = room.room_uuid
+    # room_uuid = room.room_uuid
 
-    return {"room_uuid": room_uuid, "nickname": nickname}
+    return room
 
 
-def join_room(nickname, room_uuid) -> dict:
+def join_game(nickname, room_uuid) -> dict:
     """
     Создает пользователя если необходимо, проверяет существование
     комнаты создает сессию подключающегося пользователя.
@@ -634,7 +665,7 @@ def generate_report(room_uuid):
     report = {
         "room_uuid": room.room_uuid,
         "current_action": room.rel_rule.rel_action.name,
-        "current_player": room.rel_user.name,
+        "current_player": room.rel_user.nickname,
         "current_object_type": room.rel_rule.rel_object_type.name,
         "seed": room.seed,
         "maps": objects_to_dict(maps),
@@ -674,6 +705,8 @@ def map_choices_to_dict(map_choices) -> dict:
             "map_name": map_choice.rel_object.name,
             "img_url": map_choice.rel_object.img_url,
             "short_name": map_choice.rel_object.short_name,
+            "nickname": map_choice.rel_session.rel_user.nickname,
+            "action": map_choice.rel_action.name,
         })
     return choices
 
@@ -749,13 +782,47 @@ if __name__ == "__main__":
         else:
             self_db_rebuild()
     else:
-        # TODO может добавить сюда выполнение unittest'ов?
-        User.create_user("wilson")
-        User.create_user("bulkin")
-        
-        room = db.session.query(Room).filter_by(id=1).first()
-        if not room:
-            room = Room.create_room(seed=1, current_step_id=1)
 
-        champ_choice = db.session.query(Champ_choice).filter_by(id=1).first()
+        # TODO может добавить сюда выполнение unittest'ов?
+        
+        """Эмитация игры."""
+
+        print("-------------------------------------------------------")
+        print("Запуск Эмитации игры.")
+        print("-------------------------------------------------------")
+
+        player1 = "wilson"
+        player2 = "bulkin"
+
+        # Первый игрок запускает игру и присоединяется к комнате.
+        print(f"[ START ] игрок {player1} начинает игру.")
+        room = start_game(player1, 1)
+
+        # Второй игрок присоединяется к комнате.
+        print(f"[ JOIN ] игрок {player2} присоединяется к игре.")
+        join_game(player2, room.room_uuid)
+
+        # Процедура выбора карт.
+        print(f"[ MAP_PICKING ] Этап выбора карт.")
+        room.save_choice(player1, "ban", "map", "awoken")
+        room.save_choice(player2, "ban", "map", "ck")
+        room.save_choice(player1, "pick", "map", "molten")
+        room.save_choice(player2, "pick", "map", "vale")
+        room.save_choice(player1, "ban", "map", "de")
+        room.save_choice(player2, "ban", "map", "ruins")
+        room.save_choice(player1, "pick", "map", "exile")
+
+        # Процедура выбора чемпионов.
+        print(f"[ CHAMP_PICKING ] Этап выбора чемпионов.")
+        room.save_choice(player2, "ban", "champ", "anarki", "molten")
+        room.save_choice(player1, "pick", "champ", "athena", "molten")
+        room.save_choice(player2, "pick", "champ", "bj", "molten")
+        room.save_choice(player1, "ban", "champ", "clutch", "vale")
+        room.save_choice(player2, "pick", "champ", "dk", "vale")
+        room.save_choice(player1, "pick", "champ", "doom", "vale")
+        room.save_choice(player2, "ban", "champ", "eisen", "exile")
+        room.save_choice(player1, "pick", "champ", "galena", "exile")
+        room.save_choice(player2, "pick", "champ", "keel", "exile")
+
+        print(f"[ RESULT ] Вывод отчета.")
         pprint(generate_report(room.room_uuid))

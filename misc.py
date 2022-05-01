@@ -1,4 +1,4 @@
-'''
+"""
 Данный файл хранит в себе все необходимые данные для работы приложения.
 Представляет из себя набор кортежей словарей предназначеных для
 заполнения базы данных командой:
@@ -15,7 +15,7 @@
     - rules
     - current_game_state_model
     - player_state
-'''
+"""
 
 
 object_types = (
@@ -25,33 +25,33 @@ object_types = (
 )
 
 objects = (
-    {"type": 1, "name": "Awoken", "short_name": "Awoken", "img_url": "awoken.jpg"},
-    {"type": 1, "name": 'Blood Covenant', "short_name": 'BC', "img_url": 'blood_covenant.jpg'},
-    {"type": 1, "name": 'Blood Run', "short_name": 'BR', "img_url": 'blood_run.jpg'},
-    {"type": 1, "name": 'Corrupted Keep', "short_name": 'CK', "img_url": 'corrupted_keep.jpg'},
-    {"type": 1, "name": 'Deep Embrace', "short_name": 'DE', "img_url": 'deep_embrace.jpg'},
-    {"type": 1, "name": 'Exile', "short_name": 'Exile', "img_url": 'exile.jpg'},
-    {"type": 1, "name": 'Insomnia', "short_name": 'IN', "img_url": 'insomnia.jpg'},
-    {"type": 1, "name": 'Ruins of Sarnath', "short_name": 'Ruins', "img_url": 'ruins_of_sarnath.jpg'},
-    {"type": 1, "name": 'The Molten Falls', "short_name": 'Molten', "img_url": 'the_molten_falls.jpg'},
-    {"type": 1, "name": 'Tower of Koth', "short_name": 'Koth', "img_url": 'tower_of_koth.jpg'},
-    {"type": 1, "name": 'Vale of Pnath', "short_name": 'Vale', "img_url": 'vale_of_pnath.jpg'},
-    {"type": 2, "name": 'Anarki', "short_name": 'Anarki', "img_url": 'anarki.png'},
-    {"type": 2, "name": 'Athena', "short_name": 'Athena', "img_url": 'athena.png'},
-    {"type": 2, "name": 'B.J. Blaskowicz', "short_name": 'BJ', "img_url": 'bj.png'},
-    {"type": 2, "name": 'Clutch', "short_name": 'Clutch', "img_url": 'clutch.png'},
-    {"type": 2, "name": 'Death Knight', "short_name": 'DK', "img_url": 'deathknight.png'},
-    {"type": 2, "name": 'Doom', "short_name": 'Doom', "img_url": 'doom.png'},
-    {"type": 2, "name": 'Eisen', "short_name": 'Eisen', "img_url": 'eisen.png'},
-    {"type": 2, "name": 'Galena', "short_name": 'Galena', "img_url": 'galena.png'},
-    {"type": 2, "name": 'Keel', "short_name": 'Keel', "img_url": 'keel.png'},
-    {"type": 2, "name": 'Nyx', "short_name": 'Nyx', "img_url": 'nyx.png'},
-    {"type": 2, "name": 'Ranger', "short_name": 'Ranger', "img_url": 'ranger.png'},
-    {"type": 2, "name": 'Scalebearer', "short_name": 'Scale', "img_url": 'scalebearer.png'},
-    {"type": 2, "name": 'Slash', "short_name": 'Slash', "img_url": 'slash.png'},
-    {"type": 2, "name": 'Sorlag', "short_name": 'Sorlag', "img_url": 'sorlag.png'},
-    {"type": 2, "name": 'Strogg & Peeker', "short_name": 'Strogg', "img_url": 'strogg.png'},
-    {"type": 2, "name": 'Visor', "short_name": 'Visor', "img_url": 'visor.png'},
+    {"type": 1, "name": "Awoken", "short_name": "AWOKEN", "img_url": "awoken.jpg"},
+    {"type": 1, "name": "Blood Covenant", "short_name": "BC", "img_url": "blood_covenant.jpg"},
+    {"type": 1, "name": "Blood Run", "short_name": "BR", "img_url": "blood_run.jpg"},
+    {"type": 1, "name": "Corrupted Keep", "short_name": "CK", "img_url": "corrupted_keep.jpg"},
+    {"type": 1, "name": "Deep Embrace", "short_name": "DE", "img_url": "deep_embrace.jpg"},
+    {"type": 1, "name": "Exile", "short_name": "EXILE", "img_url": "exile.jpg"},
+    {"type": 1, "name": "Insomnia", "short_name": "IN", "img_url": "insomnia.jpg"},
+    {"type": 1, "name": "Ruins of Sarnath", "short_name": "RUINS", "img_url": "ruins_of_sarnath.jpg"},
+    {"type": 1, "name": "The Molten Falls", "short_name": "MOLTEN", "img_url": "the_molten_falls.jpg"},
+    {"type": 1, "name": "Tower of Koth", "short_name": "KOTH", "img_url": "tower_of_koth.jpg"},
+    {"type": 1, "name": "Vale of Pnath", "short_name": "VALE", "img_url": "vale_of_pnath.jpg"},
+    {"type": 2, "name": "Anarki", "short_name": "ANARKI", "img_url": "anarki.png"},
+    {"type": 2, "name": "Athena", "short_name": "ATHENA", "img_url": "athena.png"},
+    {"type": 2, "name": "B.J. Blaskowicz", "short_name": "BJ", "img_url": "bj.png"},
+    {"type": 2, "name": "Clutch", "short_name": "CLUTCH", "img_url": "clutch.png"},
+    {"type": 2, "name": "Death Knight", "short_name": "DK", "img_url": "deathknight.png"},
+    {"type": 2, "name": "Doom", "short_name": "DOOM", "img_url": "doom.png"},
+    {"type": 2, "name": "Eisen", "short_name": "EISEN", "img_url": "eisen.png"},
+    {"type": 2, "name": "Galena", "short_name": "GALENA", "img_url": "galena.png"},
+    {"type": 2, "name": "Keel", "short_name": "KEEL", "img_url": "keel.png"},
+    {"type": 2, "name": "Nyx", "short_name": "NYX", "img_url": "nyx.png"},
+    {"type": 2, "name": "Ranger", "short_name": "RANGER", "img_url": "ranger.png"},
+    {"type": 2, "name": "Scalebearer", "short_name": "SCALE", "img_url": "scalebearer.png"},
+    {"type": 2, "name": "Slash", "short_name": "SLASH", "img_url": "slash.png"},
+    {"type": 2, "name": "Sorlag", "short_name": "SORLAG", "img_url": "sorlag.png"},
+    {"type": 2, "name": "Strogg & Peeker", "short_name": "STROGG", "img_url": "strogg.png"},
+    {"type": 2, "name": "Visor", "short_name": "VISOR", "img_url": "visor.png"},
 )
 
 current_season = (
