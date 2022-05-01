@@ -82,8 +82,9 @@ class User(db.Model):
     nickname = db.Column(db.String(40), nullable=False)
     is_persistent = db.Column(db.Boolean, nullable=False, default=False)
 
-    rel_sessions = db.relationship("Session", back_populates="rel_users")
-    rel_rooms = db.relationship("Room", back_populates="rel_users")
+    # Отношения многие к одному.
+    rel_sessions = db.relationship("Session", back_populates="rel_user")
+    rel_rooms = db.relationship("Room", back_populates="rel_user")
 
     @classmethod
     def get_user(cls, nickname):
@@ -132,18 +133,20 @@ class Room(db.Model):
                                 nullable=False)
     seed = db.Column(db.Integer, db.ForeignKey("teams.id"), nullable=False)
 
-    rel_sessions = db.relationship("Session", back_populates="rel_rooms")
-    rel_rules = db.relationship("Rule", back_populates="rel_rooms")
-    rel_users = db.relationship("User", back_populates="rel_rooms")
-    rel_teams = db.relationship("Team", back_populates="rel_rooms")
-    rel_map_choices = db.relationship("Map_choice", back_populates="rel_rooms")
-    rel_champ_choices = db.relationship("Champ_choice", back_populates="rel_rooms")
+    # Отношения один ко многим.
+    rel_rule = db.relationship("Rule", back_populates="rel_rooms")
+    rel_user = db.relationship("User", back_populates="rel_rooms")
+    rel_team = db.relationship("Team", back_populates="rel_rooms")
+    # Отношения многие к одному.
+    rel_sessions = db.relationship("Session", back_populates="rel_room")
+    rel_map_choices = db.relationship("Map_choice", back_populates="rel_room")
+    rel_champ_choices = db.relationship("Champ_choice", back_populates="rel_room")
 
     @classmethod
-    def create_room(cls, seed, current_step_id) -> dict:
+    def create_room(cls, seed, current_step_id):
         """
-        Создает комнату в таблице rooms и возвращает словарь
-        содержащий id и uuid комнаты. На вход принимает только int.
+        Создает комнату и возвращает ее инстанс.
+        На вход принимает только int.
         """
 
         # создаем комнату
@@ -158,7 +161,6 @@ class Room(db.Model):
             raise
 
         return new_room
-        # return {'id': new_room.id, 'uuid': new_room.room_uuid}
 
     def init_current_user(self):
         """Создает запись активного игрока в комнате."""
@@ -324,13 +326,15 @@ class Session(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     team_id = db.Column(db.Integer,db.ForeignKey("teams.id"), nullable=False)
 
-    rel_users = db.relationship("User", back_populates="rel_sessions")
-    rel_rooms = db.relationship("Room", back_populates="rel_sessions")
-    rel_teams = db.relationship("Team", back_populates="rel_sessions")
+    # Отношения один ко многим.
+    rel_room = db.relationship("Room", back_populates="rel_sessions")
+    rel_user = db.relationship("User", back_populates="rel_sessions")
+    rel_team = db.relationship("Team", back_populates="rel_sessions")
+    # Отношения многие к одному.
     rel_map_choices = db.relationship("Map_choice",
-                                      back_populates="rel_sessions")
+                                      back_populates="rel_session")
     rel_champ_choices = db.relationship("Champ_choice",
-                                        back_populates="rel_sessions")
+                                        back_populates="rel_session")
 
 
 class Rule(db.Model):
@@ -344,17 +348,19 @@ class Rule(db.Model):
                              nullable=False)
     bo_type_id = db.Column(db.Integer, db.ForeignKey("bo_types.id"),
                            nullable=False)
-    object_type_id = db.Column(db.Integer, db.ForeignKey("object_types.id"),
-                               nullable=False)
     action_id = db.Column(db.Integer, db.ForeignKey("actions.id"),
                           nullable=False)
+    object_type_id = db.Column(db.Integer, db.ForeignKey("object_types.id"),
+                               nullable=False)
 
-    rel_game_modes = db.relationship("Game_mode", back_populates="rel_rules")
-    rel_bo_types = db.relationship("Bo_type", back_populates="rel_rules")
-    rel_actions = db.relationship("Action", back_populates="rel_rules")
-    rel_rooms = db.relationship("Room", back_populates="rel_rules")
-    rel_object_types = db.relationship("Object_type",
-                                       back_populates="rel_rules")
+    # Отношения один ко многим.
+    rel_game_mode = db.relationship("Game_mode", back_populates="rel_rules")
+    rel_bo_type = db.relationship("Bo_type", back_populates="rel_rules")
+    rel_action = db.relationship("Action", back_populates="rel_rules")
+    rel_object_type = db.relationship("Object_type",
+                                      back_populates="rel_rules")
+    # Отношения многие к одному.
+    rel_rooms = db.relationship("Room", back_populates="rel_rule")
 
 
 class Action(db.Model):
@@ -369,11 +375,12 @@ class Action(db.Model):
                    autoincrement=True)
     name = db.Column(db.String(30), nullable=False)
 
-    rel_rules = db.relationship("Rule", back_populates="rel_actions")
+    # Отношения многие к одному.
+    rel_rules = db.relationship("Rule", back_populates="rel_action")
     rel_map_choices = db.relationship("Map_choice",
-                                      back_populates="rel_actions")
+                                      back_populates="rel_action")
     rel_champ_choices = db.relationship("Champ_choice",
-                                        back_populates="rel_actions")
+                                        back_populates="rel_action")
 
 
 class Bo_type(db.Model):
@@ -387,7 +394,8 @@ class Bo_type(db.Model):
                    autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
-    rel_rules = db.relationship("Rule", back_populates="rel_bo_types")
+    # Отношения многие к одному.
+    rel_rules = db.relationship("Rule", back_populates="rel_bo_type")
 
 
 class Current_season(db.Model):
@@ -399,8 +407,9 @@ class Current_season(db.Model):
     object_id = db.Column(db.Integer,db.ForeignKey("objects.id"),
                           nullable=False)
 
-    rel_objects = db.relationship("Object",
-                                  back_populates="rel_current_season")
+    # Отношения один ко многим.
+    rel_object = db.relationship("Object",
+                                 back_populates="rel_current_season")
 
 
 class Game_mode(db.Model):
@@ -412,7 +421,8 @@ class Game_mode(db.Model):
     name = db.Column(db.String(40), nullable=False)
     player_count = db.Column(db.Integer, nullable=False, unique=False)
 
-    rel_rules = db.relationship("Rule", back_populates="rel_game_modes")
+    # Отношения многие к одному.
+    rel_rules = db.relationship("Rule", back_populates="rel_game_mode")
 
 
 class Object_type(db.Model):
@@ -423,8 +433,9 @@ class Object_type(db.Model):
                    autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
-    rel_objects = db.relationship("Object", back_populates="rel_object_types")
-    rel_rules = db.relationship("Rule", back_populates="rel_object_types")
+    # Отношения многие к одному.
+    rel_objects = db.relationship("Object", back_populates="rel_object_type")
+    rel_rules = db.relationship("Rule", back_populates="rel_object_type")
 
 
 class Object(db.Model):
@@ -441,14 +452,16 @@ class Object(db.Model):
     shortname = db.Column(db.String(10), nullable=False)
     img_url = db.Column(db.String(300), nullable=False)
 
-    rel_current_season = db.relationship("Current_season",
-                                         back_populates="rel_objects")
-    rel_object_types = db.relationship("Object_type",
-                                       back_populates="rel_objects")
-    rel_map_choices = db.relationship("Map_choice",
+    # Отношения один ко многим.
+    rel_object_type = db.relationship("Object_type",
                                       back_populates="rel_objects")
+    rel_current_season = db.relationship("Current_season",
+                                         back_populates="rel_object")
+    rel_map_choices = db.relationship("Map_choice",
+                                      back_populates="rel_object")
+    # Отношения многие к одному.
     rel_champ_choices = db.relationship("Champ_choice",
-                                        back_populates="rel_objects")
+                                        back_populates="rel_object")
 
 
 class Team(db.Model):
@@ -459,8 +472,9 @@ class Team(db.Model):
                    autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
-    rel_sessions = db.relationship("Session", back_populates="rel_teams")
-    rel_rooms = db.relationship("Room", back_populates="rel_teams")
+    # Отношения многие к одному.
+    rel_sessions = db.relationship("Session", back_populates="rel_team")
+    rel_rooms = db.relationship("Room", back_populates="rel_team")
 
 
 
@@ -479,12 +493,14 @@ class Map_choice(db.Model):
     room_id = db.Column(db.Integer, db.ForeignKey("rooms.id"),
                         nullable=False)
 
-    rel_sessions = db.relationship("Session", back_populates="rel_map_choices")
-    rel_objects = db.relationship("Object", back_populates="rel_map_choices")
-    rel_actions = db.relationship("Action", back_populates="rel_map_choices")
-    rel_rooms = db.relationship("Room", back_populates="rel_map_choices")
+    # Отношения один ко многим.
+    rel_session = db.relationship("Session", back_populates="rel_map_choices")
+    rel_object = db.relationship("Object", back_populates="rel_map_choices")
+    rel_action = db.relationship("Action", back_populates="rel_map_choices")
+    rel_room = db.relationship("Room", back_populates="rel_map_choices")
+    # Отношения многие к одному.
     rel_champ_choices = db.relationship("Champ_choice",
-                                        back_populates="rel_map_choices")
+                                        back_populates="rel_map_choice")
 
 
 class Champ_choice(db.Model):
@@ -499,37 +515,34 @@ class Champ_choice(db.Model):
                           nullable=False)
     action_id = db.Column(db.Integer, db.ForeignKey("actions.id"),
                           nullable=False)
-    map_choice_id = db.Column(db.Integer, db.ForeignKey("map_choices.id"),
-                              nullable=False)
     room_id = db.Column(db.Integer, db.ForeignKey("rooms.id"),
                         nullable=False)
+    map_choice_id = db.Column(db.Integer, db.ForeignKey("map_choices.id"),
+                              nullable=False)
 
-    rel_sessions = db.relationship("Session", back_populates="rel_champ_choices")
-    rel_objects = db.relationship("Object", back_populates="rel_champ_choices")
-    rel_actions = db.relationship("Action", back_populates="rel_champ_choices")
-    rel_rooms = db.relationship("Room", back_populates="rel_champ_choices")
-    rel_map_choices = db.relationship("Map_choice",
-                                      back_populates="rel_champ_choices")
+    # Отношения один ко многим.
+    rel_session = db.relationship("Session", back_populates="rel_champ_choices")
+    rel_object = db.relationship("Object", back_populates="rel_champ_choices")
+    rel_action = db.relationship("Action", back_populates="rel_champ_choices")
+    rel_room = db.relationship("Room", back_populates="rel_champ_choices")
+    rel_map_choice = db.relationship("Map_choice",
+                                     back_populates="rel_champ_choices")
 
 
 # ------ Функции основные ----------------------------------------------
 
 def start_game(nickname, seed, current_step_id) -> dict:
     """
-    Создает пользователя если необходимо, создает комнату и результат
-    для пользователя создавшего комнату. Возвращает словарь основных
-    параметров игры для передачи его фронту.
+    Создает пользователя если необходимо, создает комнату и сессию
+    пользователя создавшего комнату. Возвращает словарь с room_uuid и
+    nickname.
     """
 
     # Создаем пользователя.
-    user = User(nickname=nickname)
-    db.session.add(user)
-    db.session.commit()
+    user = User.create_user(nickname=nickname)
     
     # Создаем комнату.
-    room = Room(seed=seed, current_step_id=current_step_id)
-    db.session.add(room)
-    db.session.commit()
+    room = Room.create_room(seed=seed, current_step_id=current_step_id)
 
     # Создаем сессию пользователя создавшего игру.
     room.create_session(user_id=user.id, team_id=1)
@@ -544,26 +557,26 @@ def start_game(nickname, seed, current_step_id) -> dict:
 def join_room(nickname, room_uuid) -> dict:
     """
     Создает пользователя если необходимо, проверяет существование
-    комнаты создает результат для подключающегося пользователя.
+    комнаты создает сессию подключающегося пользователя.
     True или False в зависимости от успеха операции.
     """
 
-    # Получаем комнату по uuid
+    # Получаем комнату по uuid.
     # NOTE При переходе на postgresql функцию str надо убрать.
     room_uuid = str(room_uuid)
     room = db.session.query(Room).filter_by(room_uuid=room_uuid).first()
     
-    # Проверка на существование комнаты
+    # Проверка на существование комнаты.
     if not room:
         raise Exception("Этой комнаты не существует в базе данных.")
 
-    # Создаем пользователя
+    # Создаем пользователя.
     user = User.create_user(nickname=nickname)
     
-    # Создаем результат подключающегося пользователя
+    # Создаем результат подключающегося пользователя.
     session_id = room.create_session(user_id=user.id, team_id=2)
     
-    # Инициализируем текущего активного игрока в комнате
+    # Инициализируем текущего активного игрока в комнате.
     room.init_current_user()
 
     # Забираем из типа UUID только строковое представление этого uuid.

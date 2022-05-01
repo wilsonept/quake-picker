@@ -4,15 +4,17 @@
   - [X] Переименовать класс Result в Session.
   - [X] Удалить старые связи таблицы Session с Map_choice и Champ_choice и создать новые.
   - [X] Создать связи Room с Map_choice и Champ_choice.
+  - [X] Переделать связи что бы было понятно где какая связь.
 
 ** DONE Перестроить базу данных.
 
+** TODO Внести изменения в документацию.
 
 ** TODO Переписать логику *models.py*
   - [ ] generate_report
     - [ ] Протестировать.
 
-  - [X] update_result => save_choice 
+  - [ ] update_result => save_choice 
     - [ ] Протестировать.
 
 ** TODO Переписать логику *main.py*
