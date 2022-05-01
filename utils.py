@@ -2,12 +2,12 @@ import json
 import requests
 
 
-'''
-Файл с вспомогательными функциями.
-'''
+"""
+Файл с вспомогательными функциями и полезностями.
+"""
 
 
-# ------ Функции --------------------------------------------------------------
+# ------ Функции -------------------------------------------------------
 
 def load_json(json_file):
     with open(json_file) as f:
@@ -16,18 +16,18 @@ def load_json(json_file):
 
 
 def file_downloader(path_to_folder, items):
-    '''Функция для скачивания картинок'''
+    """Функция для скачивания картинок"""
     for item in items:
-        file_name = item.split('/')[-1]
-        full_name = path_to_folder + '/' + file_name
+        file_name = item.split("/")[-1]
+        full_name = path_to_folder + "/" + file_name
         response = requests.get(item)
-        with open(full_name, 'wb') as f:
+        with open(full_name, "wb") as f:
             f.write(response.content)
 
 
+# ------ Разное --------------------------------------------------------
 
-
-# ------ Разное ---------------------------------------------------------------
+"""Ссылки до изображений использованных в приложении."""
 
 pics = [
     # champs
@@ -57,5 +57,4 @@ pics = [
     "https://dev.quake-champions.com/css/images/maps/deep_embrace.jpg"
 ]
 
-
-path = 'static/images/champions'
+path = "static/images/champions"

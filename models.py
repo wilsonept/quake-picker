@@ -10,24 +10,9 @@ import uuid
 
 from application import _DB as db, conf
 
-
 """
 Файл моделей и логики работы с БД.
 """
-
-# TODO Привести в порядок свойства отношений моделей. Что бы названия
-# соответствовали типам связей между таблицами.
-
-# TODO Продумать логику методов в классах.
-# Пришла мысль о том что методы создания результата логичнее расположить
-# внутри класса Room.
-
-# TODO Покрыть модели тестами
-
-# TODO Обойти отсутствии поддержки uuid формата данный в SQLite.
-# Сейчас для миграции на PostgreSQL потребуется править модели
-# (при условии что мы хотим работать с нативным для PostgreSQL uuid).
-# TODO Протестировать класс MimicUUID в работе с PostgreSQL.
 
 
 class MimicUUID(TypeDecorator):
@@ -69,7 +54,6 @@ class MimicUUID(TypeDecorator):
         else:
             return value
         
-
 
 # ------ Модели --------------------------------------------------------
 
@@ -445,6 +429,7 @@ class Current_season(db.Model):
         objects = [map.rel_object for map in season_maps]
         return objects
 
+
 class Game_mode(db.Model):
     """Таблица режимов игры. Содержит duel и tdm."""
     __tablename__ = "game_modes"
@@ -581,8 +566,6 @@ class Champ_choice(db.Model):
                                      back_populates="rel_champ_choices")
 
 
-
-
 # ------ Функции основные ----------------------------------------------
 
 def start_game(nickname, seed) -> dict:
@@ -678,8 +661,6 @@ def generate_report(room_uuid):
     return report
 
 
-
-
 # ------ Функции вспомогательные ---------------------------------------
 
 def champ_choices_to_dict(champ_choices) -> dict:
@@ -730,8 +711,6 @@ def objects_to_dict(objects) -> dict:
         } for obj in objects
     ]
     return obj_report
-
-
 
 
 # ------ Функции самотестирования. -------------------------------------
@@ -824,5 +803,5 @@ if __name__ == "__main__":
         room.save_choice(player1, "pick", "champ", "galena", "exile")
         room.save_choice(player2, "pick", "champ", "keel", "exile")
 
-        print(f"[ RESULT ] Вывод отчета.")
+        print(f"[ RESULT ] Вывод отчета:")
         pprint(generate_report(room.room_uuid))
