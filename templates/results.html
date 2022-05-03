@@ -2,18 +2,34 @@
 
 {% block content %}
 
-    {% for result in game_results %}
+    {% for map_short_name, champ_picks in players_choices.items() %}
     <div class="map-result-card">
+
+      {# Картинка чемпиона. #}
       <div class="champ">
-        <img src="/static/images/champions/r_{{ result[2]['short_name'].lower() }}.png">
+        {% for champ in champ_picks %}
+        {% if champ["action"] == "pick" and champ["team"] == "blue" %}
+        <img src="{{ champ['r_img_url'] }}">
+        {% endif %}
+        {% endfor %}
       </div>
+      
+      {# Картинка карты. #}
       <div class="map">
-        <img src="/static/images/maps/{{ result[0]['map_name'].lower().replace(' ', '_') }}.jpg">
-        <h1>{{ result[0]['map_name'].upper().replace("_", " ") }}</h1>
+        {# Берем свойства карты из любого вложенного выбора чемпиона #}
+        <img src="{{ champ_picks[0]['map_img_url'] }}">
+        <h1>{{ champ_picks[0]['map_name'].upper().replace("_", " ") }}</h1>
       </div>
+
+      {# Картинка чемпиона. #}
       <div class="champ">
-        <img src="/static/images/champions/r_{{ result[1]['short_name'].lower() }}.png">
+        {% for champ in champ_picks %}
+        {% if champ["action"] == "pick" and champ["team"] == "red" %}
+        <img src="{{ champ['r_img_url'] }}">
+        {% endif %}
+        {% endfor %}
       </div>
+
     </div>
     {% endfor %}
 

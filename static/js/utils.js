@@ -8,9 +8,13 @@ import {sendRequest} from "/static/js/xhr.js"
  * Получает текущее состояние игры с сервера с помощью xhr запроса.
  */
 export function updatePage() {
+  if (window.location.pathname.split("/")[1] === "results") {
+    const IntervalId = localStorage.getItem("pageAutoUpdate")
+    clearInterval(IntervalId)
+    return
+  }
   const body = getBody("get")
   sendRequest(body).then(rebuildPage)
-  sendRequest(body).then(getPickedMaps)
 }
 
 
@@ -44,7 +48,7 @@ function updateListeners () {
 function champOnClick(obj) {
 
   const object = JSON.parse(localStorage.getItem("gameState"))
-  const objectType = object.current_object
+  const objectType = object.current_object_type
 
   // добавляем класс card-active на кликнутую кнопку
   obj.classList.add("card-active")
@@ -90,11 +94,13 @@ function getBody(type, params) {
       "id": 1
     }
 
+    const parsedResponse = JSON.parse(localStorage.getItem("gameState"))
+
     if (params["object_type"] === "champ") {
-      const pickedMaps = getPickedMaps()
-      const pickedChampsCount = getPickedChampsCount()
-      const currentMap = getCurrentMap(pickedMaps, pickedChampsCount)
-      template.params["map_name"] = currentMap
+      const pickedMaps = getPickedMaps(parsedResponse)
+      const pickedChamps = getPickedChamps(parsedResponse)
+      const currentMap = getCurrentMap(pickedMaps, pickedChamps.length)
+      template.params["map_sname"] = currentMap
     }
 
   } else {
@@ -120,44 +126,44 @@ function rebuildPage(response) {
   localStorage.setItem("gameState", response.result)
   const parsedResponse = JSON.parse(response.result)
 
-  console.log(parsedResponse) // TEST
+  console.log("[rebuildPage]:", parsedResponse) // TEST
 
   // Если все шаги игры пройдены редирект на результаты.
-  if (parsedResponse.currentObject === "result") {
+  if (parsedResponse.current_object_type === "result") {
     window.location.pathname = `/results/${parsedResponse.room_uuid}`
+    return
   }
 
   // Проверяем все ли игроки в комнате
-  if (parsedResponse.players.length === 2) {
-    console.log('Все игроки в комнате, начинаем игру')
-    let currentObject = parsedResponse.current_object
-    
-    // Отображаем нужный шаблон если необходимо
-    if (currentObject != window.currentObject) {
-      
-      // Отображаем необходимый теплейт стадии игры.
-      const selector = `#${currentObject}s`
-      setTimeout(function() {
-        renderTemplate(selector, parsedResponse)
-      }, 4000)
-
-      // Обновляем имя второго игрока на странице.
-      setTimeout(function() {
-        let playerTwoNameBlock = document.querySelector(".red h1")
-        const playerTwoName = parsedResponse.players[1].nickname
-        playerTwoNameBlock.innerText = playerTwoName
-      }, 4000)
-
-      window.currentObject = currentObject
-    }
-    
-    if (document.querySelector(".card")) {
-      updateClasses(parsedResponse)
-    }
-    
+  if (parsedResponse.players.length < 2) {
+    console.log("[rebuildPage]:", "Ждем второго игрока.")
+    return
   }
-  else {
-    console.log("Ждем второго игрока")
+
+  console.log("[rebuildPage]:", "Все игроки в комнате, начинаем игру.")
+  let currentObjectType = parsedResponse.current_object_type
+  
+  // Отображаем нужный шаблон если необходимо.
+  if (currentObjectType != window.currentObjectType) {
+    
+    // Отображаем необходимый теплейт стадии игры.
+    const selector = `#${currentObjectType}s`
+    setTimeout(function() {
+      renderTemplate(selector, parsedResponse)
+    }, 4000)
+
+    // Обновляем имя второго игрока на странице.
+    setTimeout(function() {
+      let playerTwoNameBlock = document.querySelector(".red h1")
+      const playerTwoName = parsedResponse.players[1].nickname
+      playerTwoNameBlock.innerText = playerTwoName
+    }, 4000)
+
+    window.currentObjectType = currentObjectType
+  }
+  
+  if (document.querySelector(".card")) {
+    updateClasses(parsedResponse)
   }
 }
 
@@ -168,51 +174,58 @@ function rebuildPage(response) {
  */
 function updateClasses(parsedResponse) {
   const nickname = window.location.pathname.split("/")[2]
+  const cards = document.querySelectorAll(".card")
 
-  let choiceObjects // Для объектов выбора игрока.
-  parsedResponse.players.forEach(player => {
-    
-    // Определяем итерируемые объект по типу текущего объекта выбора.
-    if (window.currentObject === "map") {
-      choiceObjects = player.map_choices
-    }
-    else if (window.currentObject ==="champ") {
-      choiceObjects = player.champ_choices
-    }
-    // Отмечаем забаненые карточки.
-    if (choiceObjects.bans.length >= 1) {
-      choiceObjects.bans.forEach(item => {
-        let card = document.querySelector("#" + item.short_name)
+  let choiceObjects // Объекты выбора.
+  let objPropName // Название свойства из которого брать имя объекта.
+
+  if (typeof(window.currentObjectType) === "undefined") {
+    window.currentObjectType = parsedResponse.current_object_type
+  }
+
+  // Определяем итерируемые объект по типу текущего объекта выбора.
+  if (window.currentObjectType === "map") {
+    choiceObjects = parsedResponse.map_choices
+    objPropName = "map_short_name"
+  }
+  else if (window.currentObjectType === "champ" || window.currentObjectType === "result") {
+    choiceObjects = parsedResponse.champ_choices
+    objPropName = "champ_short_name"
+  }
+  
+  // Отмечаем забаненые/выбранные карточки.
+  if (choiceObjects.length > 0) {
+    for (let obj of choiceObjects) {
+      // Отмечаем забаненые карточки.
+      if (obj.action === "ban") {
+        let card = document.querySelector("#" + obj[objPropName])
         card.classList.add("card-banned")
-      })
-    }
-    // Отмечаем выбраные карточки.
-    if (choiceObjects.picks.length >= 1) {
-        choiceObjects.picks.forEach(item => {
-        let card = document.querySelector("#" + item.short_name)
+      }
+      // Отмечаем выбраные карточки.
+      if (obj.action === "pick") {
+        let card = document.querySelector("#" + obj[objPropName])
         card.classList.add("card-picked")
-      })
+      }
     }
-    // Добавляем карточке класс ожидания до тех пор пока до игрока не
-    // дойдет очередь выбирать.
-    const cards = document.querySelectorAll(".card")
-    if (parsedResponse.current_player !== nickname) {
-      cards.forEach(card => {
-        card.classList.add("card-waiting")
-      })
-    } else {
-      cards.forEach(card => {
-        card.classList.remove("card-waiting")
-      })
-    }
-  })
+  }
+
+  // Добавляем карточке класс ожидания до тех пор пока до игрока не
+  // дойдет очередь выбирать.
+  if (parsedResponse.current_player !== nickname) {
+    cards.forEach(card => {
+      card.classList.add("card-waiting")
+    })
+  } else {
+    cards.forEach(card => {
+      card.classList.remove("card-waiting")
+    })
+  }
 
   // Меняем сообщение выбора.
   let actionMessage = document.querySelector("main h1")
   actionMessage.innerText = `${parsedResponse.current_player} ${parsedResponse.current_action}`
   
   // удаляем класс card-active со всех кнопок и снимаем чекбоксы.
-  const cards = document.querySelectorAll(".card")
   cards.forEach(card => {
     card.classList.remove("card-active")
     card.querySelector("input").checked = false
@@ -262,43 +275,18 @@ function sendChoice(action, nickname, choice, objectType) {
 
 /**
  * Получает список выбранных карт.
+ * @param {Object} parsedResponse
  * @returns {Array}
  */
-function getPickedMaps() {
-  const parsedResponse = JSON.parse(localStorage.getItem("gameState"))
-
-  // Определяем по seed первого игрока и добавляем его в players.
-  let playerIndex = parsedResponse.seed - 1
-  let players = []
-  players.push(parsedResponse.players[playerIndex])
-
-  // Определяем индекс второго игрока и добавляем его в players.
-  playerIndex === 0 ? playerIndex = 1: playerIndex = 0
-  players.push(parsedResponse.players[playerIndex])
-  // if (playerIndex === 0) {
-  //   playerIndex = 1
-  // } else {
-  //   playerIndex = 0
-  // }
+function getPickedMaps(parsedResponse) {
 
   let maps = []
-  let index = 0
-  // Первый игрок будет иметь больше выбранных карты по определению.
-  // Поэтому итерируемся по выбору первого игрока и после каждого его
-  // выбора добавляем выбор второго игрока. На выходе получаем
-  // отсортированный по очередности выбора список карт.
-  players[0].map_choices.picks.map(map_choice => {
-    maps.push(map_choice.short_name)
-    try {
-      maps.push(players[1].map_choices.picks[index].short_name)
-      index += 1
-    } catch {
-      console.log('Все карты добавлены в массив.')
+  parsedResponse.map_choices.forEach(mep => {
+    if (mep.action === "pick") {
+      maps.push(mep.map_short_name)
     }
   })
 
-  // Получаем отсортированный по очередности выбора список карт.
-  console.log(maps)
   return maps 
 }
 
@@ -307,19 +295,21 @@ function getPickedMaps() {
  * Получает количество пиков чемпионов.
  * @returns {Number}
  */
-function getPickedChampsCount() {
-  const parsedResponse = JSON.parse(localStorage.getItem("gameState"))
-
+function getPickedChamps(parsedResponse) {
   // Получаем количество выбранных персонажей путем перебора каждой
   // выбранной карты обоих игроков.
-  let champPickCount = 0
-  parsedResponse.players.map(player => {
-    player.map_choices.picks.map(map_choice => {
-      champPickCount += map_choice.champ_choices.picks.length
-    })
+  if (parsedResponse.champ_choices.length === 0) {
+    return []
+  }
+
+  let pickedChamps = []
+  parsedResponse.champ_choices.forEach(champ => {
+    if (champ.action === "pick") {
+      pickedChamps.push(champ)
+    }
   })
 
-  return champPickCount
+  return pickedChamps
 }
 
 
@@ -336,6 +326,6 @@ function getCurrentMap(sortedMaps, champPickCount) {
   }
 
   // Получаем индекс карты.
-  const mapIndex = Math.floor(champPickCount / 2) - 1
+  const mapIndex = Math.floor(champPickCount / 2)
   return sortedMaps[mapIndex]
 }

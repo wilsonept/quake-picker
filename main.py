@@ -7,7 +7,7 @@ from models import Room, generate_report, start_game, join_game
 from application import app
 from application import _JSONRPC as jsonrpc
 from application import _SOCK as sock
-
+from utils import request_to_dict
 
 """
 Основной файл запуска приложения и по совместительству файл маршрутов.
@@ -27,24 +27,19 @@ def create():
     """Форма создания комнаты."""
     form = CreateForm()
     if form.validate_on_submit():
-        # Собираем необходимые данные из формы в словарь
-        form_data = {}
-        for key, value in request.form.items():
-            if key != "csrf_token" and key != "submit":
-                form_data[key] = value
+        # Собираем необходимые данные из формы в словарь.
+        form_data = request_to_dict(request)
 
-        # Конвертим полученные данные формы в необходимые для начала игры
-        start_game_params = form.convert_data(**form_data)
+        # Начинаем игру с создания пользователя, комнаты и сессии игрока.
+        room = start_game(**form_data)
+        room_uuid = room.room_uuid
+        nickname = room.rel_sessions[0].rel_user.nickname
 
-        # Начинаем игру с создания пользователя, комнаты и результата игрока
-        params = start_game(**start_game_params)
+        redirect_url = url_for("room", room_uuid=room_uuid,
+                               nickname=nickname)
+        return redirect(redirect_url)
 
-        return redirect(
-            url_for("room",
-                room_uuid=params["room_uuid"],
-                nickname=params["nickname"])
-        )
-
+    # Отображения формы создания игры.
     return render_template("create_form.html", form=form, errors=form.errors)
 
 
@@ -53,31 +48,23 @@ def join(room_uuid):
     """Форма подключения к комнате."""
     form = JoinForm()
     if form.validate_on_submit():
-        # Собираем необходимые данные из формы в словарь
-        form_data = {}
-        form_data["room_uuid"] = room_uuid
-        for key, value in request.form.items():
-            if key != "csrf_token" and key != "submit":
-                form_data[key] = value
+        # Собираем необходимые данные из формы в словарь.
+        form_data = request_to_dict(request, room_uuid)
 
-        # NOTE При переходе на postgresql функцию str надо убрать.
-        room_uuid = str(room_uuid)
-        
-        # Подключаемся к комнате, создавая пользователя и его результата
-        operation_result = join_game(**form_data)
-
-        # game_state = generate_report(room_uuid)
+        # Подключаемся к комнате, создавая пользователя и его сессию.
+        is_joined = join_game(**form_data)
 
         # Переходим в режим наблюдателя.
-        if operation_result == False:
-            return redirect(url_for("room", room_uuid=room_uuid))
+        if not is_joined:
+            return redirect(url_for("room", room_uuid=form_data["room_uuid"]))
 
-        return redirect(
-            url_for("room",
-                room_uuid=room_uuid,
-                nickname=form_data["nickname"])
-        )
+        # Подключаемся в режиме игрока.
+        redirect_url = url_for("room", room_uuid=form_data["room_uuid"],
+                               nickname=form_data["nickname"])
+        return redirect(redirect_url)
+
     else:
+        # Отображение формы подключения к игре.
         return render_template("join_form.html", form=form, errors=form.errors,
                                room_uuid=room_uuid)
 
@@ -88,8 +75,10 @@ def room(room_uuid, nickname=None):
     """Основная страница выбора, она же комната."""
 
     # NOTE При переходе на postgresql функцию str надо убрать.
-    game_state = generate_report(str(room_uuid))
+    room_uuid = str(room_uuid)
+    game_state = generate_report(room_uuid)
 
+    # Отображаем шаблон комнаты.
     return render_template("room.html", room_uuid=room_uuid,
                            game_state=game_state)
 
@@ -98,41 +87,40 @@ def room(room_uuid, nickname=None):
 def results(room_uuid):
     """Страница результатов выбора."""
 
+    room_uuid = str(room_uuid)
     game_state = generate_report(room_uuid)
 
-    # 16 это количество активных шагов в игре. Для всех режимов оно остается
-    # одинаковым меняется только количество банов. Чем больше карт необходимо
-    # сыграть тем меньше банов необходимо сделать. Для проверки на окончание
-    # выбора в БД присутствует еще 1 шаг под номером 17. Он добавлен для того
-    # что бы можно было оставить общую логику с инкрементированием шага в
-    # комнате. Если бы его не было, то БД постоянно ругалась из-за
-    # неразрешенной связи с таблицей Objects.
-    if game_state["current_object"] == "result":
-    
-        # Расставляем игроков согласно очереди подключения к комнате.
-        if game_state["players"][0]["team"] == 1:
-            player_1 = game_state["players"][1]
-            player_2 = game_state["players"][0]
-        else:
-            player_1 = game_state["players"][0]
-            player_2 = game_state["players"][1]
+    # 16 это количество активных шагов в игре. Для всех режимов оно
+    # остается # одинаковым меняется только количество банов. Чем больше
+    # карт необходимо сыграть тем меньше банов необходимо сделать. Для
+    # проверки на окончание выбора в БД присутствует еще 1 шаг под
+    # номером 17. Он добавлен для того что бы можно было оставить общую
+    # логику с инкрементированием шага в комнате. Если бы его не было,
+    # то БД постоянно ругалась из-за неразрешенной связи с таблицей
+    # Objects.
 
-        index = 1
-        maps = player_1["map_choices"]["picks"]
-        for map in player_2["map_choices"]["picks"]:
-            maps.insert(1,map)
-            index = index + 2
+    if game_state["current_object_type"] == "result":
+        # Формируем словарь пар с одинаковым названием карты.
+        # NOTE Данный код работает только для режима duel.
+        map_short_name = game_state["champ_choices"][0]["map_short_name"]
+        pair = []
+        players_choices = {}
+        for champ in game_state["champ_choices"]:
+            if map_short_name == champ["map_short_name"]:
+                pair.append(champ)
+            else:
+                players_choices[map_short_name] = pair
+                map_short_name = champ["map_short_name"]
+                pair = [champ]
 
-        game_results = []
-        for result in zip(maps, player_1["champ_choices"]["picks"],
-                          player_2["champ_choices"]["picks"]):
-            game_results.append(result)
-
+        players_choices[map_short_name] = pair
+        # Отображаем шаблон результатов.
         return render_template("results.html",
                                room_uuid=room_uuid,
-                               game_results=game_results,
-                               game_state=game_state)
+                               game_state=game_state,
+                               players_choices=players_choices)
     
+    # Отображаем шаблон комнаты.
     return redirect("room", room_uuid=room_uuid)
 
 
@@ -142,39 +130,34 @@ def results(room_uuid):
 def getState(room_uuid:str) -> str:
     """Возвращает текущее состояние игры на основе room_id в JSON формате."""
 
+    room_uuid = str(room_uuid)
     return json.dumps(generate_report(room_uuid))
 
 
 @jsonrpc.method("app.updateState")
 def updateState(room_uuid:str, action:str, nickname:str, choice:str,
-                object_type:str, map_name:str=None) -> str:
+                object_type:str, map_sname:str=None) -> str:
     """
     Принимает выбор игрока:
         
-        room_id - uuid комнаты.
-        action - действие (ban или pick).
-        nickname - имя игрока который выполняет действие.
-        choice - название карты или чемпиона.
-        object_type - тип выбора (map или champ)
+        - :str:`room_id`: uuid комнаты.
+        - :str:`action`: действие (ban или pick).
+        - :str:`nickname`: имя игрока который выполняет действие.
+        - :str:`choice`: название карты или чемпиона.
+        - :str:`object_type`: тип выбора (map или champ)
+        - :str:`map_sname`: короткое имя карты (при выборе чемпиона).
 
     Возвращает json cо всем состоянием игры.
     """
     
     # Ищем комнату и активного игрока
+    room_uuid = str(room_uuid)
     room = Room.query.filter_by(room_uuid=room_uuid).first()
-    if room.rel_users.nickname != nickname:
-        raise Exception(f"Очередь пользователя {nickname} еще не наступила")
 
     # Вносим изменения в результат
-    try:
-        room.update_result(action, object_type, choice, map_name)
-        room.next_step()
-    except ValueError:
-        # TODO написать нормальную обработку ошибок
-        print("Something went wrong inside the class method")
+    room.save_choice(nickname, action, object_type, choice, map_sname)
 
     # Возвращаем состояние комнаты
-    # TODO Разобраться как вызвать JSON-RPC роут по аналогии с redirect()
     return json.dumps(generate_report(room_uuid))
 
 
@@ -183,13 +166,13 @@ def updateState(room_uuid:str, action:str, nickname:str, choice:str,
 @sock.route("/get_state")
 def getStateWS(ws):
     """
-    Возвращаем состояние игры через websocket.
-    Принимает на вход строку состоящую из действия и uuid комнаты разделенных
+    Возвращаем состояние игры через `websocket`.
+    Принимает на вход строку состоящую из действия и `uuid` комнаты разделенных
     пробелом.
     
     Например:
-        update 654a5711-3f89-4702-8d95-3db9cb8c4215
 
+        update 654a5711-3f89-4702-8d95-3db9cb8c4215
     """
     while True:
         

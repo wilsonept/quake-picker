@@ -16,13 +16,14 @@
         
         <title>{% block title %}{% endblock %}</title>
         
-        </head>
+    </head>
     <body>
         <div class="container">
-        <!--   player one -->
+        <!-- Player one -->
         <div class="player-card blue">
             <div class="player-card-wrapper">
                 <div class="player-photo">
+                    {# TODO добавить пути до постеров в новую таблицу в БД связанную с Users #}
                     <img src='https://pngimg.com/uploads/thief/thief_PNG36.png' width="100%">
                 </div>
                 <div class="player-info">
@@ -30,14 +31,15 @@
                         <h2></h2>
                         <img class="country-flag invisible" src="">
                     </div>
+                    {# TODO добавить пути до иконок в новую таблицу в БД связанную с Users #}
                     <img class="team-logo" src="../static/images/python_logo.png" width="100%">
                     
+                    {# Определяем какой игрок справа, а какой слева. #}
                     {% if game_state.players[0].team == 'blue' %}
                         {% set index = 0 %}
                     {% else %}
                         {% set index = 1 %}
                     {% endif %}
-                    
                     {% set player1 = game_state.players[index] %}
                     {% set player2 = game_state.players[index+1] %}
 
@@ -45,19 +47,21 @@
                 </div>
             </div>
         </div>
-        <!--   champs and maps -->
-            <main>
-            {% block content %}
+        
+        <!-- Champs and maps -->
+        <main>
+        {% block content %}
 
-                <!-- TODO Перенести в styles.css -->
-                <h1 style="color: white; font-size: 6rem; font-family:'Comic Sans MS', sans-serif; font-style: italic;">vs</h1>
-            
-            {% endblock %}
-            </main>
-        <!--   player two -->
+            <h1 class="versus">vs</h1>
+        
+        {% endblock %}
+        </main>
+
+        <!-- Player two -->
         <div class="player-card red">
             <div class="player-card-wrapper">
                 <div class="player-photo">
+                    {# TODO добавить пути до постеров в новую таблицу в БД связанную с Users #}
                     <img src='https://pngimg.com/uploads/hacker/hacker_PNG29.png' width="100%">
                 </div>
                 <div class="player-info">
@@ -66,6 +70,7 @@
                         <img class="country-flag invisible" src="">
                     </div>
                     <div>
+                        {# TODO добавить пути до иконок в новую таблицу в БД связанную с Users #}
                         <img class="team-logo" src="../static/images/python_logo.png" width="100%">
                         {% if player2 %}
                             <h1>{{ player2.nickname }}</h1>
@@ -76,6 +81,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- JS Modules -->
         <script src="/static/js/main.js" type="module"></script>
         <script src="/static/js/utils.js" type="module"></script>
         <script src="/static/js/xhr.js" type="module"></script>
@@ -85,15 +92,15 @@
         
         <!-- Maps -->
         <template id="maps">
-            <h1 style="color: white; font-family: Poppins; margin-left: 30px;">Nickname action</h1>
+            <h1 class="choices-heading">Nickname action</h1>
             <div class="choice-wrapper-map">
-            {% for map in game_state.maps %}
-                <label id="{{ map.short_name }}" class="card card-map">
+            {% for mep in game_state["maps"] %}
+                <label id="{{ mep['short_name'] }}" class="card card-map">
                     <div class="card-image-wrapper">
-                        <img class="card-image" src="/static/images/maps/{{ map.img_url }}">
+                        <img class="card-image" src="{{ mep['img_url'] }}">
                     </div>
                     <div class="card-outer-light"></div>
-                    <input name="{{ map.map_name }}" type="checkbox">
+                    <input name="{{ mep['short_name'] }}" type="checkbox">
                 </label>
             {% endfor %}
             </div>
@@ -101,15 +108,15 @@
 
         <!-- Champions -->
         <template id="champs">
-            <h1 style="color: white; font-family: Poppins; margin-left: 30px;">Nickname action</h1>
+            <h1 class="choices-heading">Nickname action</h1>
             <div class="choice-wrapper-champ">
-            {% for champ in game_state.champs %}
-                <label id="{{ champ.short_name }}" class="card card-champ">
+            {% for champ in game_state["champs"] %}
+                <label id="{{ champ['short_name'] }}" class="card card-champ">
                     <div class="card-image-wrapper">
-                        <img class="card-image" src="/static/images/champions/{{ champ.img_url }}">
+                        <img class="card-image" src="{{ champ['img_url'] }}">
                     </div>
                     <div class="card-outer-light"></div>
-                    <input name="{{ champ.champ_name }}" type="checkbox">
+                    <input name="{{ champ['short_name'] }}" type="checkbox">
                 </label>
             {% endfor %}
         </template>

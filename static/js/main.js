@@ -25,26 +25,17 @@ import {testSocket} from "/static/js/ws.js"
 let appMode = "xhr"
 
 if (appMode === "xhr") {
-  // Запускаем авто обновление
+  // Запускаем авто обновление.
   if (window.location.pathname.split("/")[2] !== "results") {
     const pageAutoUpdate = setInterval(updatePage, 5000)
+    localStorage.setItem("pageAutoUpdate", pageAutoUpdate)
   }
 
-  if (typeof response !== "undefined") {
-    localStorage.setItem("gameState", response.result)
-    const parsedResponse = JSON.parse(response.result)
-
-    // TODO Условие должно быть сгенерировано на основе режима игры в комнате.
-    if (parsedResponse.step > 16) {
-      clearInterval(pageAutoUpdate)
-    }
-  }
 } else {
   const mySocket = testSocket()
   // TODO Переделать что бы websocket принимал JSON
   mySocket.send("update 129e833a-95e6-4563-8763-f01b5fa2785a")
 }
-
 
 // Всякая хрень.
 // window.onload = (event) => {

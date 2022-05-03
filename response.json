@@ -1,0 +1,279 @@
+{
+    "champ_choices": [
+        {
+            "action": "ban",
+            "champ_name": "Anarki",
+            "img_url": "anarki.png",
+            "map_name": "The Molten Falls",
+            "map_short_name": "MOLTEN",
+            "nickname": "bulkin",
+            "short_name": "ANARKI",
+            "team": "red"
+        },
+        {
+            "action": "pick",
+            "champ_name": "Athena",
+            "img_url": "athena.png",
+            "map_name": "The Molten Falls",
+            "map_short_name": "MOLTEN",
+            "nickname": "wilson",
+            "short_name": "ATHENA",
+            "team": "blue"
+        },
+        {
+            "action": "pick",
+            "champ_name": "B.J. Blaskowicz",
+            "img_url": "bj.png",
+            "map_name": "The Molten Falls",
+            "map_short_name": "MOLTEN",
+            "nickname": "bulkin",
+            "short_name": "BJ",
+            "team": "red"
+        },
+        {
+            "action": "ban",
+            "champ_name": "Clutch",
+            "img_url": "clutch.png",
+            "map_name": "Vale of Pnath",
+            "map_short_name": "VALE",
+            "nickname": "wilson",
+            "short_name": "CLUTCH",
+            "team": "blue"
+        },
+        {
+            "action": "pick",
+            "champ_name": "Death Knight",
+            "img_url": "deathknight.png",
+            "map_name": "Vale of Pnath",
+            "map_short_name": "VALE",
+            "nickname": "bulkin",
+            "short_name": "DK",
+            "team": "red"
+        },
+        {
+            "action": "pick",
+            "champ_name": "Doom",
+            "img_url": "doom.png",
+            "map_name": "Vale of Pnath",
+            "map_short_name": "VALE",
+            "nickname": "wilson",
+            "short_name": "DOOM",
+            "team": "blue"
+        },
+        {
+            "action": "ban",
+            "champ_name": "Eisen",
+            "img_url": "eisen.png",
+            "map_name": "Exile",
+            "map_short_name": "EXILE",
+            "nickname": "bulkin",
+            "short_name": "EISEN",
+            "team": "red"
+        },
+        {
+            "action": "pick",
+            "champ_name": "Galena",
+            "img_url": "galena.png",
+            "map_name": "Exile",
+            "map_short_name": "EXILE",
+            "nickname": "wilson",
+            "short_name": "GALENA",
+            "team": "blue"
+        },
+        {
+            "action": "pick",
+            "champ_name": "Keel",
+            "img_url": "keel.png",
+            "map_name": "Exile",
+            "map_short_name": "EXILE",
+            "nickname": "bulkin",
+            "short_name": "KEEL",
+            "team": "red"
+        }
+    ],
+    "champs": [
+        {
+            "img_url": "anarki.png",
+            "map_name": "Anarki",
+            "short_name": "ANARKI"
+        },
+        {
+            "img_url": "athena.png",
+            "map_name": "Athena",
+            "short_name": "ATHENA"
+        },
+        {
+            "img_url": "bj.png",
+            "map_name": "B.J. Blaskowicz",
+            "short_name": "BJ"
+        },
+        {
+            "img_url": "clutch.png",
+            "map_name": "Clutch",
+            "short_name": "CLUTCH"
+        },
+        {
+            "img_url": "deathknight.png",
+            "map_name": "Death Knight",
+            "short_name": "DK"
+        },
+        {
+            "img_url": "doom.png",
+            "map_name": "Doom",
+            "short_name": "DOOM"
+        },
+        {
+            "img_url": "eisen.png",
+            "map_name": "Eisen",
+            "short_name": "EISEN"
+        },
+        {
+            "img_url": "galena.png",
+            "map_name": "Galena",
+            "short_name": "GALENA"
+        },
+        {
+            "img_url": "keel.png",
+            "map_name": "Keel",
+            "short_name": "KEEL"
+        },
+        {
+            "img_url": "nyx.png",
+            "map_name": "Nyx",
+            "short_name": "NYX"
+        },
+        {
+            "img_url": "ranger.png",
+            "map_name": "Ranger",
+            "short_name": "RANGER"
+        },
+        {
+            "img_url": "scalebearer.png",
+            "map_name": "Scalebearer",
+            "short_name": "SCALE"
+        },
+        {
+            "img_url": "slash.png",
+            "map_name": "Slash",
+            "short_name": "SLASH"
+        },
+        {
+            "img_url": "sorlag.png",
+            "map_name": "Sorlag",
+            "short_name": "SORLAG"
+        },
+        {
+            "img_url": "strogg.png",
+            "map_name": "Strogg & Peeker",
+            "short_name": "STROGG"
+        },
+        {
+            "img_url": "visor.png",
+            "map_name": "Visor",
+            "short_name": "VISOR"
+        }
+    ],
+    "current_action": "end",
+    "current_object_type": "result",
+    "current_player": "wilson",
+    "map_choices": [
+        {
+            "action": "ban",
+            "img_url": "awoken.jpg",
+            "map_name": "Awoken",
+            "nickname": "wilson",
+            "short_name": "AWOKEN"
+        },
+        {
+            "action": "ban",
+            "img_url": "corrupted_keep.jpg",
+            "map_name": "Corrupted Keep",
+            "nickname": "bulkin",
+            "short_name": "CK"
+        },
+        {
+            "action": "pick",
+            "img_url": "the_molten_falls.jpg",
+            "map_name": "The Molten Falls",
+            "nickname": "wilson",
+            "short_name": "MOLTEN"
+        },
+        {
+            "action": "pick",
+            "img_url": "vale_of_pnath.jpg",
+            "map_name": "Vale of Pnath",
+            "nickname": "bulkin",
+            "short_name": "VALE"
+        },
+        {
+            "action": "ban",
+            "img_url": "deep_embrace.jpg",
+            "map_name": "Deep Embrace",
+            "nickname": "wilson",
+            "short_name": "DE"
+        },
+        {
+            "action": "ban",
+            "img_url": "ruins_of_sarnath.jpg",
+            "map_name": "Ruins of Sarnath",
+            "nickname": "bulkin",
+            "short_name": "RUINS"
+        },
+        {
+            "action": "pick",
+            "img_url": "exile.jpg",
+            "map_name": "Exile",
+            "nickname": "wilson",
+            "short_name": "EXILE"
+        }
+    ],
+    "maps": [
+        {
+            "img_url": "the_molten_falls.jpg",
+            "map_name": "The Molten Falls",
+            "short_name": "MOLTEN"
+        },
+        {
+            "img_url": "ruins_of_sarnath.jpg",
+            "map_name": "Ruins of Sarnath",
+            "short_name": "RUINS"
+        },
+        {
+            "img_url": "vale_of_pnath.jpg",
+            "map_name": "Vale of Pnath",
+            "short_name": "VALE"
+        },
+        {
+            "img_url": "awoken.jpg",
+            "map_name": "Awoken",
+            "short_name": "AWOKEN"
+        },
+        {
+            "img_url": "corrupted_keep.jpg",
+            "map_name": "Corrupted Keep",
+            "short_name": "CK"
+        },
+        {
+            "img_url": "exile.jpg",
+            "map_name": "Exile",
+            "short_name": "EXILE"
+        },
+        {
+            "img_url": "deep_embrace.jpg",
+            "map_name": "Deep Embrace",
+            "short_name": "DE"
+        }
+    ],
+    "players": [
+        {
+            "nickname": "wilson",
+            "team": "blue"
+        },
+        {
+            "nickname": "bulkin",
+            "team": "red"
+        }
+    ],
+    "room_uuid": "aac56bfc-22b6-4821-ba59-0fa806eb3996",
+    "seed": 1
+}

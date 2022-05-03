@@ -29,6 +29,19 @@ body {
     /* background: center/cover no-repeat url(/static/images/maps/awoken.jpg); */
 }
 
+.versus {
+  color: white;
+  font-size: 6rem;
+  font-family:'Comic Sans MS', sans-serif;
+  font-style: italic;
+}
+
+.choices-heading {
+  color: white;
+  font-family: Poppins;
+  margin-left: 30px;
+}
+
 .container {
     position: relative;
     display: flex;

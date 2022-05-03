@@ -1,3 +1,4 @@
+import random
 import sys
 from pprint import pprint
 
@@ -14,6 +15,8 @@ from application import _DB as db, conf
 Файл моделей и логики работы с БД.
 """
 
+
+# ------ Вспомогательные классы ----------------------------------------
 
 class MimicUUID(TypeDecorator):
     """
@@ -53,7 +56,7 @@ class MimicUUID(TypeDecorator):
             return uuid.UUID(value)
         else:
             return value
-        
+ 
 
 # ------ Модели --------------------------------------------------------
 
@@ -172,7 +175,6 @@ class Room(db.Model):
 
         return next_user_id
 
-
     def _next_step(self):
         """Меняет текущий шаг в комнате."""
         next_user_id = self._next_user()
@@ -225,16 +227,16 @@ class Room(db.Model):
             if session.user_id == user_id:
                 return session
 
-    def save_choice(self, nickname, action, object_type,
-                    choice_sname, map_sname=None):
+    def save_choice(self, nickname: str, action: str, object_type: str,
+                    choice_sname: str, map_sname: str=None):
         """
         Вносит в базу выбор игрока.
             Параметры:
-                `nickname` (str): ник игрока сделавшего выбор.
-                `action` (str): действие которое совершает игрок.
-                `object_type` (str): тип объекта над которым совершается действие.
-                `choice` (str): короткое имя объекта (short_name)
-                `map_name` (str): имя карты для которой выбирается чемпион.
+                :str:`nickname`: ник игрока сделавшего выбор.
+                :str:`action`: действие которое совершает игрок.
+                :str:`object_type`: тип объекта над которым совершается действие.
+                :str:`choice`: короткое имя объекта (short_name)
+                :str:`map_name`: имя карты для которой выбирается чемпион.
         """
 
         # Проверяем валидность игрока.
@@ -255,16 +257,10 @@ class Room(db.Model):
                 f"'{current_object_type}'"
             ))
         
-        # --- Определяем id выбранного объекта.
         # Значения в БД хранятся в uppercase.
         choice_sname = choice_sname.upper()
 
-        # Выбираем объект для итерирования.
-        if object_type == "map":
-            choices = self.rel_map_choices
-        elif object_type == "champ":
-            choices = self.rel_champ_choices
-
+        # Определяем id выбранного объекта.
         object_id = Object.get_obj_by_sname(choice_sname).id
 
         # Определяем id сессии.
@@ -469,6 +465,7 @@ class Object(db.Model):
     name = db.Column(db.String(40), nullable=False)
     short_name = db.Column(db.String(10), nullable=False)
     img_url = db.Column(db.String(300), nullable=False)
+    r_img_url = db.Column(db.String(300), nullable=True)
 
     # Отношения один ко многим.
     rel_object_type = db.relationship("Object_type",
@@ -568,14 +565,26 @@ class Champ_choice(db.Model):
 
 # ------ Функции основные ----------------------------------------------
 
-def start_game(nickname, seed) -> dict:
+def start_game(nickname: str, seed: str, game_mode: str=None,
+               bo_type: str=None) -> dict:
     """
     Создает пользователя если необходимо, создает комнату и сессию
     пользователя создавшего комнату. Возвращает экземпляр класса Room.
     """
 
+    # Приводим seed к числу.
+    if seed == "Opponent":
+        seed == 2
+    elif seed == "You":
+        seed == 1
+    else:
+        seed = random.choice([1, 2])
+
     # Создаем пользователя.
-    user = User.create_user(nickname=nickname)
+    try:
+        user = User.create_user(nickname=nickname)
+    except:
+        pass
     
     # Создаем комнату.
     room = Room.create_room(seed=seed, current_step_id=1)
@@ -627,12 +636,6 @@ def generate_report(room_uuid):
     # Получаем инфу по комнате и по доступным картам.
     room = Room.get_room(room_uuid)
 
-    # Проверка на наличие текущего игрока в комнате.
-    if not room.rel_user:
-        raise Exception(
-            "Текущий игрок еще не определен. Ожидаем второго игрока."
-        )
-
     # Получаем список доступных героев.
     champs = Object.get_champs()
     # Получаем список доступных карт,
@@ -646,9 +649,9 @@ def generate_report(room_uuid):
 
     # Получаем тело отчета.
     report = {
-        "room_uuid": room.room_uuid,
+        "room_uuid": str(room.room_uuid),
         "current_action": room.rel_rule.rel_action.name,
-        "current_player": room.rel_user.nickname,
+        "current_player": None,
         "current_object_type": room.rel_rule.rel_object_type.name,
         "seed": room.seed,
         "maps": objects_to_dict(maps),
@@ -657,6 +660,10 @@ def generate_report(room_uuid):
         "champ_choices": champ_choices_to_dict(champ_choices),
         "players": sessions_to_dict(sessions),
     }
+
+    # Проверяем если текущий игрок определен, добавляем его в отчет.
+    if room.rel_user:
+       report["current_player"] = room.rel_user.nickname
 
     return report
 
@@ -668,13 +675,19 @@ def champ_choices_to_dict(champ_choices) -> dict:
     choices = []
     for champ_choice in champ_choices:
         choices.append({
-            "champ_name": champ_choice.rel_object.name,
-            "img_url": champ_choice.rel_object.img_url,
-            "short_name": champ_choice.rel_object.short_name,
-            "map_short_name": champ_choice.rel_map_choice.rel_object.short_name,
-            "map_name": champ_choice.rel_map_choice.rel_object.name,
-            "nickname": champ_choice.rel_session.rel_user.nickname,
             "action": champ_choice.rel_action.name,
+
+            "champ_name": champ_choice.rel_object.name,
+            "champ_short_name": champ_choice.rel_object.short_name,
+            "img_url": champ_choice.rel_object.img_url,
+            "r_img_url": champ_choice.rel_object.r_img_url,
+
+            "map_name": champ_choice.rel_map_choice.rel_object.name,
+            "map_short_name": champ_choice.rel_map_choice.rel_object.short_name,
+            "map_img_url": champ_choice.rel_map_choice.rel_object.img_url,
+
+            "nickname": champ_choice.rel_session.rel_user.nickname,
+            "team": champ_choice.rel_session.rel_team.name,
         })
     return choices
 
@@ -685,7 +698,7 @@ def map_choices_to_dict(map_choices) -> dict:
         choices.append({
             "map_name": map_choice.rel_object.name,
             "img_url": map_choice.rel_object.img_url,
-            "short_name": map_choice.rel_object.short_name,
+            "map_short_name": map_choice.rel_object.short_name,
             "nickname": map_choice.rel_session.rel_user.nickname,
             "action": map_choice.rel_action.name,
         })
@@ -705,7 +718,7 @@ def objects_to_dict(objects) -> dict:
     """Форматирует список экземпляров класса Object в отчет."""
     obj_report = [
         {
-            "map_name": obj.name,
+            "name": obj.name,
             "img_url": obj.img_url,
             "short_name": obj.short_name,
         } for obj in objects

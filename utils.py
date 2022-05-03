@@ -25,6 +25,24 @@ def file_downloader(path_to_folder, items):
             f.write(response.content)
 
 
+def request_to_dict(request: object, room_uuid: str=None):
+    """
+    Фильтрует объект запроса.
+    Принимает `request` и при необходимости :str:`room_uuid`.
+    Возвращает словарь.
+    """
+    form_data = {}
+    if room_uuid:
+        form_data["room_uuid"] = str(room_uuid)
+
+    for key, value in request.form.items():
+        if key != "csrf_token" and key != "submit":
+            form_data[key] = value
+    
+    return form_data
+
+
+
 # ------ Разное --------------------------------------------------------
 
 """Ссылки до изображений использованных в приложении."""
