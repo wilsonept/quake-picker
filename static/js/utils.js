@@ -14,7 +14,7 @@ export function updatePage() {
     return
   }
   const body = getBody("get")
-  sendRequest(body).then(rebuildPage)
+  sendRequest(body).then(updateClasses).then(rebuildPage)
 }
 
 
@@ -161,50 +161,53 @@ function rebuildPage(response) {
 
     window.currentObjectType = currentObjectType
   }
-  
-  if (document.querySelector(".card")) {
-    updateClasses(parsedResponse)
-  }
 }
 
 
 /**
  * Обновляет состояния карточек на основе распаршенного ответа сервера.
- * @param {Object} parsedResponse 
+ * @param {Promise} response 
+ * @returns {Promise}
  */
-function updateClasses(parsedResponse) {
+function updateClasses(response) {
+
+  localStorage.setItem("gameState", response.result)
+  const parsedResponse = JSON.parse(response.result)
+
+  console.log("[ updateClasses ]:", parsedResponse) // TEST
+
   const nickname = window.location.pathname.split("/")[2]
   const cards = document.querySelectorAll(".card")
 
-  let choiceObjects // Объекты выбора.
-  let objPropName // Название свойства из которого брать имя объекта.
-
-  if (typeof(window.currentObjectType) === "undefined") {
-    window.currentObjectType = parsedResponse.current_object_type
+  console.log("[ updateClasses ]:", cards) // TEST
+  if (cards.length <= 0) {
+    return response
   }
 
-  // Определяем итерируемые объект по типу текущего объекта выбора.
-  if (window.currentObjectType === "map") {
-    choiceObjects = parsedResponse.map_choices
-    objPropName = "map_short_name"
+  // Объединяем итерируемые объекты.
+  let choices = {
+    "mapChoices": {
+      "items": parsedResponse.map_choices,
+      "propName": "map_short_name"
+    },
+    "champChoices": {
+      "items": parsedResponse.champ_choices,
+      "propName": "champ_short_name"
+    }
   }
-  else if (window.currentObjectType === "champ" || window.currentObjectType === "result") {
-    choiceObjects = parsedResponse.champ_choices
-    objPropName = "champ_short_name"
-  }
-  
-  // Отмечаем забаненые/выбранные карточки.
-  if (choiceObjects.length > 0) {
-    for (let obj of choiceObjects) {
-      // Отмечаем забаненые карточки.
-      if (obj.action === "ban") {
-        let card = document.querySelector("#" + obj[objPropName])
-        card.classList.add("card-banned")
-      }
-      // Отмечаем выбраные карточки.
-      if (obj.action === "pick") {
-        let card = document.querySelector("#" + obj[objPropName])
-        card.classList.add("card-picked")
+
+  console.log("[ updateClasses ]:", choices) // TEST
+
+  // Отмечаем забаненые/выбранные объекты которые сейчас на странице.
+  for (const [key, value] of Object.entries(choices)) {
+    if (value["items"].length > 0) {
+      for (const item of value["items"]) {
+        let card = document.querySelector("#" + item[value["propName"]])
+        if (card !== null) {
+          let cls
+          item.action === "ban" ? cls = "card-banned" : cls = "card-picked"
+          card.classList.add(cls)
+        }
       }
     }
   }
@@ -230,6 +233,8 @@ function updateClasses(parsedResponse) {
     card.classList.remove("card-active")
     card.querySelector("input").checked = false
   })
+
+  return response
 }
 
 
@@ -248,7 +253,6 @@ function renderTemplate(selector, parsedResponse) {
   main.innerHTML = ""
   // Вставляем клон в основной блок.
   main.appendChild(tempClone)
-  updateClasses(parsedResponse)
   updateListeners()
 }
 
@@ -269,7 +273,7 @@ function sendChoice(action, nickname, choice, objectType) {
       "object_type": objectType
     })
   console.log(body)
-  sendRequest(body).then(rebuildPage)
+  sendRequest(body).then(updateClasses).then(rebuildPage)
 }
 
 
