@@ -4,10 +4,10 @@
 
 /**
  * Отправляет фоновый запрос на сервер.
- * @param {object} body 
+ * @param {Object} body 
  * @returns {Promise}
  */
-export function sendRequest(body) {
+export function sendXHR(body) {
   return new Promise((resolve, reject) => {
     const endPoint = "/api"
     const xhr = new XMLHttpRequest()
@@ -19,6 +19,7 @@ export function sendRequest(body) {
       "Content-Type",
       "application/json"
     )
+
     xhr.onload = () => {
       if (xhr.status >= 400) {
         reject(xhr.response)

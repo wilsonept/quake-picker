@@ -1,72 +1,57 @@
-import {sendRequest} from "/static/js/xhr.js"
+import { sendXHR } from "/static/js/xhr.js"
 
 // Включаем строгий режим.
 "use strict"
 
 
 /**
- * Получает текущее состояние игры с сервера с помощью xhr запроса.
+ * Отправляет запрос на сервер согласно режиму работы приложения.
+ * @param {Object} body
+ * @param {Object} ws веб-сокет, необходим если режим приложения "ws"
+ * @returns {Promise}
+ */
+export function sendRequest(body, ws=null) {
+  if (appMode === "xhr") {
+    return sendXHR(body)
+
+  } else if (appMode === "ws") {
+
+    if (ws.constructor.name === "WebSocket") {
+      ws.send(JSON.stringify(body))
+    
+    // Если передан не веб-сокет, а его промис.
+    } else {
+      ws.then((ws) => {
+        ws.send(JSON.stringify(body))
+      })
+    }
+    return
+
+  } else {
+    console.log("Выбран не верный режим работы приложения.")
+  }
+}
+
+
+/**
+ * Запускает цепочку обновления страницы.
  */
 export function updatePage() {
-  if (window.location.pathname.split("/")[1] === "results") {
-    const IntervalId = localStorage.getItem("pageAutoUpdate")
-    clearInterval(IntervalId)
-    return
+  // Останавливаем авто обновление страницы если оно больше не нужно.
+  const gameStep = window.location.pathname.split("/")[1]
+  if (gameStep === "results" || appMode === "ws") {
+    try {
+      const IntervalId = localStorage.getItem("pageAutoUpdate")
+      clearInterval(IntervalId)
+    }
+    catch {
+      console.log("IntervalId не определена 'undefined'")
+    }
   }
-  const body = getBody("get")
-  sendRequest(body).then(updateClasses).then(rebuildPage)
-}
 
-
-/**
- * Обновляем листенер клика на карточках карт/чемпионов.
- */
-function updateListeners () {
-  // получаем список всех карточек выбора.
-  const cards = document.querySelectorAll(".card")
-
-  cards.forEach(button => {
-    // Вешаем листенер нажатия на кнопки.
-    button.addEventListener("click", function (event) {
-      // Отменяем поведение при клике по лейблу по умолчанию. Если этого
-      // не сделать, то клик будет выполняться дважды. Один раз
-      // стандартный второй тот который мы создали. Это приведет к
-      // двойному вызову данной функции.
-      event.preventDefault()
-      // Функция выполнится при нажатии. this это текущий элемент по которому
-      // был произведен клик
-      champOnClick(this)
-    });
-  });
-}
-
-
-/**
- * Функция выполняющаяся при клике по карточке карты/чемпиона.
- * @param {Object} obj 
- */
-function champOnClick(obj) {
-
-  const object = JSON.parse(localStorage.getItem("gameState"))
-  const objectType = object.current_object_type
-
-  // добавляем класс card-active на кликнутую кнопку
-  obj.classList.add("card-active")
-  // отмечаем вложенный чекбокс
-  let checkBox = obj.querySelector(".card input")
-  checkBox.checked = true
-
-  const cards = document.querySelectorAll(".card")
-  cards.forEach(card => {
-    card.classList.add("card-waiting")
-  })
-
-  const gameState = JSON.parse(localStorage.getItem("gameState"))
-  const action = gameState.current_action
-  const nickname = window.location.pathname.split("/")[2]
-  const choice = obj.getAttribute("id")
-
-  sendChoice(action, nickname, choice, objectType)
+  // Обновляем страницу.
+  updateClasses()
+  setTimeout(rebuildPage, 4000)
 }
 
 
@@ -75,11 +60,12 @@ function champOnClick(obj) {
  * Типы поддерживаемые приложением: get, update.
  * @param {String} type 
  * @param {Object} params 
- * @returns 
+ * @returns {Object}
  */
-function getBody(type, params) {
+export function newBody(type, params) {
   let template
 
+  // Update запрос.
   if (type === "update") {
     template = {
       "jsonrpc": "2.0",
@@ -94,8 +80,8 @@ function getBody(type, params) {
       "id": 1
     }
 
+    // Добавляем название карты если выбирается чемпион.
     const parsedResponse = JSON.parse(localStorage.getItem("gameState"))
-
     if (params["object_type"] === "champ") {
       const pickedMaps = getPickedMaps(parsedResponse)
       const pickedChamps = getPickedChamps(parsedResponse)
@@ -103,14 +89,22 @@ function getBody(type, params) {
       template.params["map_sname"] = currentMap
     }
 
+    if (appMode === "ws") {
+      template.method = "ws.updateState"
+    }
+
+  // Get запрос.
   } else {
     template = {
       "jsonrpc": "2.0",
       "method": "app.getState",
       "params": {
-          "room_uuid": window.location.pathname.split("/")[1],
+        "room_uuid": window.location.pathname.split("/")[1],
       },
       "id": 1
+    }
+    if (appMode === "ws") {
+      template.method = "ws.getState"
     }
   }
   return template
@@ -118,71 +112,21 @@ function getBody(type, params) {
 
 
 /**
- * Перестраивает на основе полученного ответа от сервера.
- * @param {Promise} response 
- */
-function rebuildPage(response) {
-  
-  localStorage.setItem("gameState", response.result)
-  const parsedResponse = JSON.parse(response.result)
-
-  console.log("[rebuildPage]:", parsedResponse) // TEST
-
-  // Если все шаги игры пройдены редирект на результаты.
-  if (parsedResponse.current_object_type === "result") {
-    window.location.pathname = `/results/${parsedResponse.room_uuid}`
-    return
-  }
-
-  // Проверяем все ли игроки в комнате
-  if (parsedResponse.players.length < 2) {
-    console.log("[rebuildPage]:", "Ждем второго игрока.")
-    return
-  }
-
-  console.log("[rebuildPage]:", "Все игроки в комнате, начинаем игру.")
-  let currentObjectType = parsedResponse.current_object_type
-  
-  // Отображаем нужный шаблон если необходимо.
-  if (currentObjectType != window.currentObjectType) {
-    
-    // Отображаем необходимый теплейт стадии игры.
-    const selector = `#${currentObjectType}s`
-    setTimeout(function() {
-      renderTemplate(selector, parsedResponse)
-    }, 4000)
-
-    // Обновляем имя второго игрока на странице.
-    setTimeout(function() {
-      let playerTwoNameBlock = document.querySelector(".red h1")
-      const playerTwoName = parsedResponse.players[1].nickname
-      playerTwoNameBlock.innerText = playerTwoName
-    }, 4000)
-
-    window.currentObjectType = currentObjectType
-  }
-}
-
-
-/**
  * Обновляет состояния карточек на основе распаршенного ответа сервера.
  * @param {Promise} response 
- * @returns {Promise}
  */
-function updateClasses(response) {
+function updateClasses() {
 
-  localStorage.setItem("gameState", response.result)
-  const parsedResponse = JSON.parse(response.result)
-
-  console.log("[ updateClasses ]:", parsedResponse) // TEST
+  let cards = document.querySelectorAll(".card")
+  if (cards.length <= 0) {
+    rebuildPage()
+  }
 
   const nickname = window.location.pathname.split("/")[2]
-  const cards = document.querySelectorAll(".card")
+  cards = document.querySelectorAll(".card")
 
-  console.log("[ updateClasses ]:", cards) // TEST
-  if (cards.length <= 0) {
-    return response
-  }
+  const responseData = localStorage.getItem("gameState")
+  const parsedResponse = JSON.parse(responseData)
 
   // Объединяем итерируемые объекты.
   let choices = {
@@ -214,7 +158,7 @@ function updateClasses(response) {
 
   // Добавляем карточке класс ожидания до тех пор пока до игрока не
   // дойдет очередь выбирать.
-  if (parsedResponse.current_player !== nickname) {
+  if (parsedResponse.current_player.toLowerCase() !== nickname.toLowerCase()) {
     cards.forEach(card => {
       card.classList.add("card-waiting")
     })
@@ -226,15 +170,55 @@ function updateClasses(response) {
 
   // Меняем сообщение выбора.
   let actionMessage = document.querySelector("main h1")
-  actionMessage.innerText = `${parsedResponse.current_player} ${parsedResponse.current_action}`
+  actionMessage.innerText = `
+    ${parsedResponse.current_player} ${parsedResponse.current_action}`
   
   // удаляем класс card-active со всех кнопок и снимаем чекбоксы.
   cards.forEach(card => {
     card.classList.remove("card-active")
     card.querySelector("input").checked = false
   })
+}
 
-  return response
+
+/**
+ * Перестраивает на основе полученного ответа от сервера.
+ */
+function rebuildPage() {
+  
+  const responseData = localStorage.getItem("gameState")
+  const parsedResponse = JSON.parse(responseData)
+
+  // Если все шаги игры пройдены редирект на результаты.
+  if (parsedResponse.current_object_type === "result") {
+    window.location.pathname = `/results/${parsedResponse.room_uuid}`
+    return
+  }
+
+  // Проверяем все ли игроки в комнате
+  if (parsedResponse.players.length < 2) {
+    console.log("[rebuildPage]:", "Ждем второго игрока.")
+    return
+  }
+
+  console.log("[rebuildPage]:", "Все игроки в комнате, начинаем игру.")
+  let currentObjectType = parsedResponse.current_object_type
+  
+  // Отображаем нужный шаблон если необходимо.
+  if (currentObjectType != window.currentObjectType) {
+    
+    const selector = `#${currentObjectType}s`
+
+    // Отображаем необходимый теплейт стадии игры.
+    renderTemplate(selector, parsedResponse)
+
+    // Обновляем имя второго игрока на странице.
+    let playerTwoNameBlock = document.querySelector(".red h1")
+    const playerTwoName = parsedResponse.players[1].nickname
+    playerTwoNameBlock.innerText = playerTwoName
+
+    window.currentObjectType = currentObjectType
+  }
 }
 
 
@@ -242,9 +226,8 @@ function updateClasses(response) {
  * Заменяет текущее отображение в блоке main на отображение
  * шаблона по селектору.
  * @param {String} selector
- * @param {Object} parsedResponse 
  */
-function renderTemplate(selector, parsedResponse) {
+function renderTemplate(selector) {
   let main = document.querySelector("main")
   const template = document.querySelector(selector)
   // Клонируем template.
@@ -265,15 +248,23 @@ function renderTemplate(selector, parsedResponse) {
  * @param {String} objectType map или champ
  */
 function sendChoice(action, nickname, choice, objectType) {
-  let body = getBody(
-    "update", {
+  let body = newBody(
+    "update",
+    {
       "action": action,
       "nickname": nickname,
       "choice": choice,
       "object_type": objectType
     })
-  console.log(body)
-  sendRequest(body).then(updateClasses).then(rebuildPage)
+  if (appMode === "xhr") {
+    sendRequest(body).then(updateClasses).then(() => {
+      setTimeout(rebuildPage, 4000)
+    })
+  } else if (appMode === "ws") {
+    sendRequest(body, self.ws)
+  } else {
+    console.log("Выбран не верный режим работы приложения.")
+  }
 }
 
 
@@ -332,4 +323,56 @@ function getCurrentMap(sortedMaps, champPickCount) {
   // Получаем индекс карты.
   const mapIndex = Math.floor(champPickCount / 2)
   return sortedMaps[mapIndex]
+}
+
+
+/**
+ * Обновляем листенер клика на карточках карт/чемпионов.
+ */
+function updateListeners () {
+  // получаем список всех карточек выбора.
+  const cards = document.querySelectorAll(".card")
+
+  cards.forEach(button => {
+    // Вешаем листенер нажатия на кнопки.
+    button.addEventListener("click", function (event) {
+      // Отменяем поведение при клике по лейблу по умолчанию. Если этого
+      // не сделать, то клик будет выполняться дважды. Один раз
+      // стандартный второй тот который мы создали. Это приведет к
+      // двойному вызову данной функции.
+      event.preventDefault()
+      // Функция выполнится при нажатии. this это текущий элемент
+      // по которому был произведен клик.
+      champOnClick(this)
+    });
+  });
+}
+
+
+/**
+ * Функция выполняющаяся при клике по карточке карты/чемпиона.
+ * @param {Object} obj 
+ */
+function champOnClick(obj) {
+
+  const object = JSON.parse(localStorage.getItem("gameState"))
+  const objectType = object.current_object_type
+
+  // добавляем класс card-active на кликнутую кнопку
+  obj.classList.add("card-active")
+  // отмечаем вложенный чекбокс
+  let checkBox = obj.querySelector(".card input")
+  checkBox.checked = true
+
+  const cards = document.querySelectorAll(".card")
+  cards.forEach(card => {
+    card.classList.add("card-waiting")
+  })
+
+  const gameState = JSON.parse(localStorage.getItem("gameState"))
+  const action = gameState.current_action
+  const nickname = window.location.pathname.split("/")[2]
+  const choice = obj.getAttribute("id")
+
+  sendChoice(action, nickname, choice, objectType)
 }

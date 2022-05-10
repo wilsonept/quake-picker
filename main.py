@@ -150,44 +150,102 @@ def updateState(room_uuid:str, action:str, nickname:str, choice:str,
     Возвращает json cо всем состоянием игры.
     """
     
-    # Ищем комнату и активного игрока
+    # Ищем комнату и активного игрока.
     room_uuid = str(room_uuid)
     room = Room.query.filter_by(room_uuid=room_uuid).first()
 
-    # Вносим изменения в результат
+    # Вносим изменения в результат.
     room.save_choice(nickname, action, object_type, choice, map_sname)
 
-    # Возвращаем состояние комнаты
+    # Возвращаем состояние комнаты.
     return json.dumps(generate_report(room_uuid))
 
 
 # ------ Тестовые маршруты ---------------------------------------------
 
-@sock.route("/get_state")
-def getStateWS(ws):
-    """
-    Возвращаем состояние игры через `websocket`.
-    Принимает на вход строку состоящую из действия и `uuid` комнаты разделенных
-    пробелом.
-    
-    Например:
+WEBSOCKETS = set()
+@sock.route("/ws")
+def ws_server(ws):
+    global WEBSOCKETS
+    """Веб-сокет сервер. Принимает три вида сообщений:
+        - Выбор карты.
+        - Выбор чемпиона.
+        - Запрос состояния.
 
-        update 654a5711-3f89-4702-8d95-3db9cb8c4215
+    Выбор карты:
+    ```json
+    {
+        "room_uuid": "4a702fc3-0468-4126-bc16-be17d0145a65",
+        "action": "ban",
+        "nickname": "wilson",
+        "choice": "awoken",
+        "object_type": "map"
+    } 
+    ```
+
+    Выбор чемпиона:
+    ```json
+    {
+        "room_uuid": "4a702fc3-0468-4126-bc16-be17d0145a65",
+        "action": "ban",
+        "nickname": "wilson",
+        "choice": "anarki",
+        "object_type": "champ",
+        "map_sname": "awoken"
+    } 
+    ```
+
+    Запрос состояния:
+    ```json
+    {
+        "room_uuid": "4a702fc3-0468-4126-bc16-be17d0145a65"
+    } 
+    ```
     """
+
     while True:
-        
-        # TODO Переделать что бы websocket принимал JSON, 
-        # а не строку через пробел
         data = ws.receive()
-        action, room_uuid = data.split(" ")[0], data.split(" ")[1]
 
-        if action == "update" and room_uuid:
-            try:
-                ws.send(json.dumps(generate_report(room_uuid)))
-            except:
-                ws.send(None)
+        WEBSOCKETS.add(ws)
+        parsed_data = json.loads(data)
+
+        room_uuid = parsed_data["params"]["room_uuid"]
+
+        if parsed_data["method"] == "ws.updateState":
+            action = parsed_data["params"]["action"]
+            nickname = parsed_data["params"]["nickname"].lower()
+            object_type = parsed_data["params"]["object_type"]
+            choice = parsed_data["params"]["choice"]
+            # Если чемпион то добавляем название карты.
+            if object_type == "champ":
+                map_sname = parsed_data["params"]["map_sname"]
+            else: map_sname = None
+
+            # Ищем комнату и активного игрока.
+            room_uuid = str(room_uuid)
+            room = Room.query.filter_by(room_uuid=room_uuid).first()
+
+            # Вносим изменения в результат.
+            room.save_choice(nickname, action, object_type, choice, map_sname)
+
+        # Возвращаем состояние комнаты.
+        result = json.dumps(generate_report(room_uuid))
+        for ws in WEBSOCKETS:
+            if ws.ws.state.name == "OPEN":
+                ws.send(result)
+
+
+@sock.route("/test")
+def test(ws):
+    while True:
+        data = ws.receive()
+    
+        if data == "hell yeah!":
+            print(data)
+            ws.send("working great!")
         else:
-            ws.send(None)
+            print(data)
+            ws.send("hell no!")
 
 
 # ------ Запуск приложения ---------------------------------------------

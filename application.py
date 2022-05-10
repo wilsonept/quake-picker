@@ -60,11 +60,11 @@ def create_app(conf):
     app = Flask(__name__)
     app.config["SECRET_KEY"]=conf["app_secret"]
     
-    # Подключение БД
+    # Подключение БД.
     if conf["db_engine"] == "postgresql":
         engine = (f"postgresql://{conf['user']}:{conf['password']}@"
                   f"{conf['host']}:{conf['port']}/{conf['db_name']}")
-        # отключаем FSADeprecationWarning при старте приложения.
+        # Отключаем FSADeprecationWarning при старте приложения.
         app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     elif conf["db_engine"] == "sqlite":
@@ -74,15 +74,15 @@ def create_app(conf):
         app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     else:
-        Exception("Не верное значение для db_engine в файле конфигурации")
+        Exception("Не верное значение для db_engine в файле конфигурации.")
 
     app.config["SQLALCHEMY_DATABASE_URI"] = engine
     _DB = SQLAlchemy(app)
 
-    # Инициализируем RPC
+    # Инициализируем RPC.
     _JSONRPC = JSONRPC(app, "/api", enable_web_browsable_api=True)
 
-    # Инициализируем websocket
+    # Инициализируем websocket.
     _SOCK = Sock(app)
     return app
 
@@ -90,4 +90,5 @@ app = create_app(conf)
 
 
 if __name__ == "__main__":
-    print("URI подключения:", app.config["SQLALCHEMY_DATABASE_URI"])
+    print("[ DEBUG ] URI подключения:",
+        app.config["SQLALCHEMY_DATABASE_URI"])

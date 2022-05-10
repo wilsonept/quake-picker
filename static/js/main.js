@@ -1,5 +1,5 @@
-import {updatePage} from "/static/js/utils.js"
-import {testSocket} from "/static/js/ws.js"
+import { updatePage, sendRequest, newBody } from "/static/js/utils.js"
+import { openWS } from "/static/js/ws.js"
 
 // Включаем строгий режим.
 "use strict"
@@ -9,32 +9,39 @@ import {testSocket} from "/static/js/ws.js"
 * Режим работы - xhr.
   - Регистрируем запрос данных раз в 5 секунд.
   - Когда выполняется запрос мы получаем промис.
-    - Цепочка удачного запроса.
-      - Парсим ответ.
+    Цепочка удачного запроса:
+      - Сохраняем ответ в localStorage.
       - Перестраиваем страницу если необходимо.
 
 
 * Режим работы - websocket.
-  - Открываем websocket к серверу.
+  - Открываем websocket к серверу и запрашиваем состояние.
   - Когда приходят изменения:
-      - Парсим ответ.
-      - Перестраиваем страницу.
+      - Сохраняем ответ в localStorage.
+      - Перестраиваем страницу если необходимо.
 */
 
 // Режим работы приложения.
-let appMode = "xhr"
+self.appMode = "ws"
 
 if (appMode === "xhr") {
-  // Запускаем авто обновление.
-  if (window.location.pathname.split("/")[2] !== "results") {
-    const pageAutoUpdate = setInterval(updatePage, 5000)
-    localStorage.setItem("pageAutoUpdate", pageAutoUpdate)
-  }
 
-} else {
-  const mySocket = testSocket()
-  // TODO Переделать что бы websocket принимал JSON
-  mySocket.send("update 129e833a-95e6-4563-8763-f01b5fa2785a")
+  // Запускаем авто обновление по интервалу.
+  const pageAutoUpdate = setInterval(() => {
+    const body = newBody("get")
+    // Отправляем запрос и сохраняем ответ в localStorage затем 
+    // запускает цепочку обночления страницы.
+    sendRequest(body).then((response) => {
+      localStorage.setItem("gameState", response.result)
+    }).then(updatePage)
+  }, 5000)
+  
+  // Сохраняем индекс интервала в localStorage.
+  localStorage.setItem("pageAutoUpdate", pageAutoUpdate)
+
+} else if (appMode === "ws") {
+  // Открываем сокет и сохраняем его глобально в объекте window.
+  self.ws = openWS("ws://127.0.0.1:5000/ws")
 }
 
 // Всякая хрень.

@@ -789,14 +789,17 @@ if __name__ == "__main__":
         # Первый игрок запускает игру и присоединяется к комнате.
         print(f"[ START ] игрок {player1} начинает игру.")
         room = start_game(player1, 1)
+        print(f"[ JOIN ] http://127.0.0.1:5000/{room.room_uuid}/{player1}")
 
         # Второй игрок присоединяется к комнате.
         print(f"[ JOIN ] игрок {player2} присоединяется к игре.")
+        print(f"[ JOIN ] http://127.0.0.1:5000/{room.room_uuid}/{player2}")
         join_game(player2, room.room_uuid)
 
         # Процедура выбора карт.
         print(f"[ MAP_PICKING ] Этап выбора карт.")
         room.save_choice(player1, "ban", "map", "awoken")
+        exit()
         room.save_choice(player2, "ban", "map", "ck")
         room.save_choice(player1, "pick", "map", "molten")
         room.save_choice(player2, "pick", "map", "vale")
