@@ -219,7 +219,7 @@ function rebuildPage() {
     playerTwoNameBlock.innerText = playerTwoName
 
     // Меняем текстовый фон.
-    const bg = document.querySelector(".container")
+    const bg = document.querySelector(".custom__container")
     const clss = [
       "waiting-opponent",
       "picking-results", 

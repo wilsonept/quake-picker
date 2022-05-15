@@ -42,7 +42,7 @@ body {
   margin-left: 30px;
 }
 
-.container {
+.custom__container {
     position: relative;
     display: flex;
     width: 100%;
@@ -53,8 +53,8 @@ body {
     overflow: hidden;
 }
 
-.container::before,
-.container::after {
+.custom__container::before,
+.custom__container::after {
     position: absolute;
     white-space: pre;
     font-size: 14rem;
@@ -70,43 +70,57 @@ body {
 }
 
 /* Текстовый фон приложения. */
-.container::before {
+.custom__container::before {
     color: rgba(81, 75, 80, .1);
     -webkit-text-stroke: 1px rgba(81, 75, 80, .6);
     z-index: -99;
 }
-.container::after {
+.custom__container::after {
     color: rgba(28, 22, 29, 0);
     -webkit-text-stroke: 1px rgba(81, 75, 80, .4);
     z-index: -100;
 }
 /* Фон ожидания. */
 .waiting-opponent::before {
-    content: 'WAITING \A     FOR OPPONENT';
+  content: 'WAITING \A     FOR OPPONENT';
 }
 .waiting-opponent::after {
-    content: 'WAITING \A     FOR OPPONENT \A    WAITING FOR OPPONENT \A  WAITING FOR OPPONENT \A WAITING FOR OPPONENT';
+  content: 'WAITING \A     FOR OPPONENT \A    WAITING FOR OPPONENT \A  WAITING FOR OPPONENT \A WAITING FOR OPPONENT';
 }
 /* Фон отображения результатов. */
 .picking-results::before {
-    content: 'PICKING \A     RESULTS';
+  content: 'PICKING \A     RESULTS';
 }
 .picking-results::after {
-    content: 'PICKING \A     RESULTS \A    PICKING RESULTS \A  PICKING RESULTS \A PICKING RESULTS';
+  content: 'PICKING \A     RESULTS \A    PICKING RESULTS \A  PICKING RESULTS \A PICKING RESULTS';
 }
 /* Фон выбора карт. */
 .picking-maps::before {
-    content: 'PICKING \A     MAPS';
+  content: 'PICKING \A     MAPS';
 }
 .picking-maps::after {
-    content: 'PICKING \A     MAPS \A    PICKING MAPS \A  PICKING MAPS \A PICKING MAPS';
+  content: 'PICKING \A     MAPS \A    PICKING MAPS \A  PICKING MAPS \A PICKING MAPS';
 }
 /* Фон выбора чемпионов. */
 .picking-champs::before {
-    content: 'PICKING \A     CHAMPS';
+  content: 'PICKING \A     CHAMPS';
 }
 .picking-champs::after {
-    content: 'PICKING \A     CHAMPS \A    PICKING CHAMPS \A  PICKING CHAMPS \A PICKING CHAMPS';
+  content: 'PICKING \A     CHAMPS \A    PICKING CHAMPS \A  PICKING CHAMPS \A PICKING CHAMPS';
+}
+/* Фон создания игры. */
+.create-match::before {
+  content: 'CREATE \A     MATCH';
+}
+.create-match::after {
+  content: 'CREATE \A     MATCH \A    CREATE MATCH \A  CREATE MATCH \A CREATE MATCH';
+}
+/* Фон подключения к игре. */
+.join-match::before {
+  content: 'JOIN \A     MATCH';
+}
+.join-match::after {
+  content: 'JOIN \A     MATCH \A    JOIN MATCH \A  JOIN MATCH \A JOIN MATCH';
 }
 
 
@@ -719,6 +733,27 @@ main :nth-child(5).map-result-card {
 /* ----------------- дополнение к bootstrap -----------------*/
 
 .form__custom {
-    min-width: 400px;
-    max-height: 600px;
+  position: relative;
+  min-width: 400px;
+  max-height: 600px;
+  background: no-repeat left/300% url("/static/images/main_bg.jpg");
+  box-shadow: 0 0 30px black,
+              0 0 10px black;
+}
+.form__custom::before, .form__custom::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  background: #31EFD5;
+  box-shadow: 0 0 30px #12A390,
+              0 0 30px #31EFD5;
+}
+.form__custom::before {
+  left: -2px;
+  right: 400px;
+}
+.form__custom::after {
+  left: 400px;
+  right: -2px;
 }

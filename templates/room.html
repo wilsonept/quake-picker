@@ -28,14 +28,14 @@
         <!-- Background text -->
         {% if game_state.current_player %}
             {% if game_state.current_object_type == "map" %}
-            <div class="container picking-maps">
+            <div class="custom__container picking-maps">
             {% elif game_state.current_object_type == "champ" %}
-            <div class="container picking-champs">
+            <div class="custom__container picking-champs">
             {% elif game_state.current_object_type == "result" %}
-            <div class="container picking-results">
+            <div class="custom__container picking-results">
             {% endif %}
         {% else %}
-            <div class="container waiting-opponent">
+            <div class="custom__container waiting-opponent">
         {% endif %}
 
         <!-- Player one -->
