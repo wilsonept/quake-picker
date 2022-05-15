@@ -7,29 +7,26 @@ import { sendXHR } from "/static/js/xhr.js"
 /**
  * Отправляет запрос на сервер согласно режиму работы приложения.
  * @param {Object} body
- * @param {Object} ws веб-сокет, необходим если режим приложения "ws"
- * @returns {Promise}
+ * @param {Object} ws Веб-сокет, необходим если режим приложения "ws"
+ * @returns {Promise} Только в случае работы в режиме "xhr"
  */
 export function sendRequest(body, ws=null) {
   if (appMode === "xhr") {
     return sendXHR(body)
 
   } else if (appMode === "ws") {
-
-    if (ws.constructor.name === "WebSocket") {
+    try {
       ws.send(JSON.stringify(body))
-    
-    // Если передан не веб-сокет, а его промис.
-    } else {
-      ws.then((ws) => {
-        ws.send(JSON.stringify(body))
-      })
+    } catch {
+      self.ws = openWS("ws://127.0.0.1:5000/ws")
+      self.ws.send(JSON.stringify(body))
     }
-    return
+    console.log("[ sendRequest ] Отправляю сообщение через веб-сокет.")
 
   } else {
     console.log("Выбран не верный режим работы приложения.")
   }
+  return
 }
 
 
@@ -37,20 +34,9 @@ export function sendRequest(body, ws=null) {
  * Запускает цепочку обновления страницы.
  */
 export function updatePage() {
-  // Останавливаем авто обновление страницы если оно больше не нужно.
-  const gameStep = window.location.pathname.split("/")[1]
-  if (gameStep === "results" || appMode === "ws") {
-    try {
-      const IntervalId = localStorage.getItem("pageAutoUpdate")
-      clearInterval(IntervalId)
-    }
-    catch {
-      console.log("IntervalId не определена 'undefined'")
-    }
-  }
-
-  // Обновляем страницу.
   updateClasses()
+  // Запускаем с задержкой, что бы при переходе на следующий этап выбора
+  // было время разглядеть выбор оппонента.
   setTimeout(rebuildPage, 4000)
 }
 
@@ -140,8 +126,6 @@ function updateClasses() {
     }
   }
 
-  console.log("[ updateClasses ]:", choices) // TEST
-
   // Отмечаем забаненые/выбранные объекты которые сейчас на странице.
   for (const [key, value] of Object.entries(choices)) {
     if (value["items"].length > 0) {
@@ -154,6 +138,17 @@ function updateClasses() {
         }
       }
     }
+  }
+
+  if (parsedResponse.current_player === null) {
+    console.log("[ updateClasses ] Ждем второго игрока.")
+    return
+  }
+
+  let currentPlayer = parsedResponse.current_player
+  if (currentPlayer != window.currentPlayer) {
+    play("choice")
+    window.currentPlayer = currentPlayer
   }
 
   // Добавляем карточке класс ожидания до тех пор пока до игрока не
@@ -197,12 +192,18 @@ function rebuildPage() {
 
   // Проверяем все ли игроки в комнате
   if (parsedResponse.players.length < 2) {
-    console.log("[rebuildPage]:", "Ждем второго игрока.")
+    console.log("[ rebuildPage ]:", "Ждем второго игрока.")
     return
+  } else {
+    const cards = document.querySelector(".card")
+    if (cards === null) {
+      console.log("[ rebuildPage ]:", "Все игроки в комнате, начинаем игру.")
+      play("start")
+    }
   }
 
-  console.log("[rebuildPage]:", "Все игроки в комнате, начинаем игру.")
   let currentObjectType = parsedResponse.current_object_type
+  let currentPlayer = parsedResponse.current_player
   
   // Отображаем нужный шаблон если необходимо.
   if (currentObjectType != window.currentObjectType) {
@@ -217,7 +218,19 @@ function rebuildPage() {
     const playerTwoName = parsedResponse.players[1].nickname
     playerTwoNameBlock.innerText = playerTwoName
 
+    // Меняем текстовый фон.
+    const bg = document.querySelector(".container")
+    const clss = [
+      "waiting-opponent",
+      "picking-results", 
+      "picking-maps",
+      "picking-champs"
+    ]
+    bg.classList.remove(...clss)
+    bg.classList.add(`picking-${currentObjectType}s`)
+
     window.currentObjectType = currentObjectType
+    window.currentPlayer = currentPlayer
   }
 }
 
@@ -257,7 +270,9 @@ function sendChoice(action, nickname, choice, objectType) {
       "object_type": objectType
     })
   if (appMode === "xhr") {
-    sendRequest(body).then(updateClasses).then(() => {
+    sendRequest(body).then((response) => {
+        localStorage.setItem("gameState", response.result)
+    }).then(updateClasses).then(() => {
       setTimeout(rebuildPage, 4000)
     })
   } else if (appMode === "ws") {
@@ -358,9 +373,9 @@ function champOnClick(obj) {
   const object = JSON.parse(localStorage.getItem("gameState"))
   const objectType = object.current_object_type
 
-  // добавляем класс card-active на кликнутую кнопку
+  // Добавляем класс card-active на кликнутую кнопку.
   obj.classList.add("card-active")
-  // отмечаем вложенный чекбокс
+  // Отмечаем вложенный чекбокс.
   let checkBox = obj.querySelector(".card input")
   checkBox.checked = true
 
@@ -375,4 +390,13 @@ function champOnClick(obj) {
   const choice = obj.getAttribute("id")
 
   sendChoice(action, nickname, choice, objectType)
+}
+
+
+/**
+ * Проигрывает звук.
+ */
+function play(soundId) {
+  let snd = document.getElementById(soundId)
+  snd.play();
 }

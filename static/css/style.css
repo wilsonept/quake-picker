@@ -69,21 +69,46 @@ body {
     animation: 60s linear 0s infinite alternate move-bg-text;
 }
 
-/* TODO необходимо менять content в зависимости от этапа выбора силами JS */
+/* Текстовый фон приложения. */
 .container::before {
-    content: 'PICKING \A     RESULTS';
     color: rgba(81, 75, 80, .1);
     -webkit-text-stroke: 1px rgba(81, 75, 80, .6);
     z-index: -99;
 }
-
-/* TODO необходимо менять content в зависимости от этапа выбора силами JS */
 .container::after {
-    content: 'PICKING \A     RESULTS \A    PICKING RESULTS \A  PICKING RESULTS \A PICKING RESULTS';
     color: rgba(28, 22, 29, 0);
     -webkit-text-stroke: 1px rgba(81, 75, 80, .4);
     z-index: -100;
 }
+/* Фон ожидания. */
+.waiting-opponent::before {
+    content: 'WAITING \A     FOR OPPONENT';
+}
+.waiting-opponent::after {
+    content: 'WAITING \A     FOR OPPONENT \A    WAITING FOR OPPONENT \A  WAITING FOR OPPONENT \A WAITING FOR OPPONENT';
+}
+/* Фон отображения результатов. */
+.picking-results::before {
+    content: 'PICKING \A     RESULTS';
+}
+.picking-results::after {
+    content: 'PICKING \A     RESULTS \A    PICKING RESULTS \A  PICKING RESULTS \A PICKING RESULTS';
+}
+/* Фон выбора карт. */
+.picking-maps::before {
+    content: 'PICKING \A     MAPS';
+}
+.picking-maps::after {
+    content: 'PICKING \A     MAPS \A    PICKING MAPS \A  PICKING MAPS \A PICKING MAPS';
+}
+/* Фон выбора чемпионов. */
+.picking-champs::before {
+    content: 'PICKING \A     CHAMPS';
+}
+.picking-champs::after {
+    content: 'PICKING \A     CHAMPS \A    PICKING CHAMPS \A  PICKING CHAMPS \A PICKING CHAMPS';
+}
+
 
 /* ----------------- Чемпионы и Карты -----------------*/
 

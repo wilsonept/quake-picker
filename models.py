@@ -148,7 +148,8 @@ class Room(db.Model):
         except:
             # отменяем транзакцию в случае ошибки.
             db.session.rollback()
-            raise
+            cls.create_room(seed, current_step_id)
+            # raise
 
         return room
 

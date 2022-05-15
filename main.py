@@ -166,7 +166,6 @@ def updateState(room_uuid:str, action:str, nickname:str, choice:str,
 WEBSOCKETS = set()
 @sock.route("/ws")
 def ws_server(ws):
-    global WEBSOCKETS
     """Веб-сокет сервер. Принимает три вида сообщений:
         - Выбор карты.
         - Выбор чемпиона.
@@ -203,14 +202,14 @@ def ws_server(ws):
     ```
     """
 
+    global WEBSOCKETS
+    WEBSOCKETS.add(ws)
+
     while True:
         data = ws.receive()
 
-        WEBSOCKETS.add(ws)
         parsed_data = json.loads(data)
-
         room_uuid = parsed_data["params"]["room_uuid"]
-
         if parsed_data["method"] == "ws.updateState":
             action = parsed_data["params"]["action"]
             nickname = parsed_data["params"]["nickname"].lower()
@@ -230,8 +229,11 @@ def ws_server(ws):
 
         # Возвращаем состояние комнаты.
         result = json.dumps(generate_report(room_uuid))
+
         for ws in WEBSOCKETS:
-            if ws.ws.state.name == "OPEN":
+            if ws.ws.status != "OPEN":
+                WEBSOCKETS.remove(ws)
+            else:
                 ws.send(result)
 
 
