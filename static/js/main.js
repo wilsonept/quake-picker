@@ -1,4 +1,4 @@
-import { updatePage, sendRequest, newBody } from "/static/js/utils.js"
+import { updatePage, sendRequest, newBody, updateInviteListener } from "/static/js/utils.js"
 import { openWS } from "/static/js/ws.js"
 
 // Включаем строгий режим.
@@ -56,6 +56,7 @@ function initApplication(mode) {
     // Открываем сокет и сохраняем его глобально в объекте window.
     self.ws = openWS("ws://127.0.0.1:5000/ws")
   }
+  updateInviteListener()
 }
 
 /**

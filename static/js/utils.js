@@ -365,6 +365,27 @@ function updateListeners () {
 
 
 /**
+ * Заменяет действие при клике по кнопре "пригласить"
+ * Сохраняет ссылку приглашения в буфер обмена.
+ */
+export function updateInviteListener () {
+  const invite = document.querySelector(".invite")
+  invite.addEventListener("click", (event) => {
+    event.preventDefault()
+    const input = document.createElement("input");
+    const route = window.location.host
+    const room_uuid = window.location.pathname.split("/")[1]
+    console.log(`${route}/join/${room_uuid}`)
+    input.setAttribute("value", `http://${route}/join/${room_uuid}`)
+    document.body.appendChild(input)
+    input.select();
+    const result = document.execCommand("copy")
+    document.body.removeChild(input)
+    return result
+  })
+}
+
+/**
  * Функция выполняющаяся при клике по карточке карты/чемпиона.
  * @param {Object} obj 
  */

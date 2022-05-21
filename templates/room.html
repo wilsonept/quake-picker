@@ -99,6 +99,9 @@
                             <h1>{{ player2.nickname }}</h1>
                         {% else %}
                             <h1>???</h1>
+                            <a class="invite" href="http://127.0.0.1/join/{{ game_state.room_uuid }}">
+                                copy
+                            </a>
                         {% endif %}
                     </div>
                 </div>
