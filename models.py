@@ -2,9 +2,6 @@ import random
 import sys
 from pprint import pprint
 
-# NOTE Закомментировано так как sqlite не поддерживает данный тип данных.
-#from sqlalchemy.dialects.postgresql import UUID
-#from sqlalchemy import text
 from sqlalchemy.types import CHAR, TypeDecorator
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -107,8 +104,6 @@ class Room(db.Model):
                    autoincrement=True)
     room_uuid = db.Column(MimicUUID(), nullable=False, unique=True,
                           default=str(uuid.uuid4()))
-    # NOTE Закомментировано так как sqlite не поддерживает данный тип данных.
-    # room_uuid = db.Column(UUID(as_uuid=True), server_default=text("uuid_generate_v4()")) 
     current_user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
                                 nullable=True)
     current_step_id = db.Column(db.Integer, db.ForeignKey("rules.id"),
