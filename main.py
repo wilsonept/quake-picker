@@ -232,10 +232,12 @@ def ws_server(ws):
         result = json.dumps(generate_report(room_uuid))
 
         for ws in WEBSOCKETS:
-            if ws.ws.status != "OPEN":
-                WEBSOCKETS.remove(ws)
-            else:
+            try:
                 ws.send(result)
+            except:
+                print("закрываю мертвый веб-сокет.")
+                ws.close()
+            
 
 
 @sock.route("/test")

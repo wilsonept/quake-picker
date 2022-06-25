@@ -370,6 +370,8 @@ function updateListeners () {
  */
 export function updateInviteListener () {
   const invite = document.querySelector(".invite")
+  if (!invite) {return}
+
   invite.addEventListener("click", (event) => {
     event.preventDefault()
     const input = document.createElement("input");
