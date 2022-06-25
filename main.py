@@ -7,6 +7,7 @@ from models import Room, generate_report, start_game, join_game
 from application import app
 from application import _JSONRPC as jsonrpc
 from application import _SOCK as sock
+from application import conf
 from utils import request_to_dict
 
 """
@@ -253,4 +254,4 @@ def test(ws):
 # ------ Запуск приложения ---------------------------------------------
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host=conf["app_host"], port=conf["app_port"], debug=True)

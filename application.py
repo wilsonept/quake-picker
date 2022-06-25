@@ -19,12 +19,15 @@ from utils import load_json
 ## PostgreSQL (prod)
 ```json
 {
-    "host": "<database ip address>",
-    "port": "<database port>",
-    "user": "<database admin>",
-    "password": "<database password>",
-    "db_name": "quakepicker",
+    "app_host": "<application ip>",
+    "app_port": "<application port>",
     "app_secret": "<random string as secret key>",
+
+    "db_host": "<database ip address>",
+    "db_port": "<database port>",
+    "db_user": "<database admin>",
+    "db_password": "<database password>",
+    "db_name": "quakepicker",
     "db_engine": "postgresql"
 } 
 ```
@@ -34,13 +37,13 @@ https://app.gitbook.com/s/qg0Ltf53I35tt60xYYEl/app-deployment-prod
 ## SQLite (dev):
 ```json
 {
-    "host": "<database ip address>",
-    "port": "<database port>",
-    "user": "<database admin>",
-    "password": "<database password>",
-    "db_name": "quakepicker",
+    "app_host": "<application ip>",
+    "app_port": "<application port>",
     "app_secret": "<random string as secret key>",
-    "db_engine": "postgresql"
+    
+    "db_name": "quakepicker",
+    "db_engine": "sqlite",
+    "db_folder_path": "./"  
 } 
 ```
 Вопросы развертывания описаны в документации:
@@ -62,8 +65,8 @@ def create_app(conf):
     
     # Подключение БД.
     if conf["db_engine"] == "postgresql":
-        engine = (f"postgresql://{conf['user']}:{conf['password']}@"
-                  f"{conf['host']}:{conf['port']}/{conf['db_name']}")
+        engine = (f"postgresql://{conf['db_user']}:{conf['db_password']}@"
+                  f"{conf['db_host']}:{conf['db_port']}/{conf['db_name']}")
         # Отключаем FSADeprecationWarning при старте приложения.
         app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 

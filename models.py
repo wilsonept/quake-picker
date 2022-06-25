@@ -9,7 +9,7 @@ from sqlalchemy.types import CHAR, TypeDecorator
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
-from application import _DB as db, conf
+from application import _DB as db
 
 """
 Файл моделей и логики работы с БД.
@@ -742,30 +742,27 @@ def self_db_rebuild(force=False):
             print("Прервано пользователем.")
             exit()
 
-    # NOTE на postgresql пока не тестировалось поэтому такое условие, 
-    # после тестирования на postgres его можно удалить.
-    if conf["db_engine"] == "sqlite":
-        print("[ DROP ] Удаляю все таблицы.")
-        db.drop_all()
-        print("[ CREATE ] Создаю таблицы.")
-        db.create_all()
+    print("[ DROP ] Удаляю все таблицы.")
+    db.drop_all()
+    print("[ CREATE ] Создаю таблицы.")
+    db.create_all()
 
-        import misc
-        tables = (
-            (misc.object_types, Object_type),
-            (misc.objects, Object),
-            (misc.current_season, Current_season),
-            (misc.actions, Action),
-            (misc.game_modes, Game_mode),
-            (misc.bo_types, Bo_type),
-            (misc.teams, Team),
-            (misc.rules, Rule)
-        )
-        for table in tables:
-            print(f"[ INSERT ] Заполняю таблицу {table[1].__tablename__}")
-            for row in table[0]:
-                db.session.add(table[1](**row))
-                db.session.commit()
+    import misc
+    tables = (
+        (misc.object_types, Object_type),
+        (misc.objects, Object),
+        (misc.current_season, Current_season),
+        (misc.actions, Action),
+        (misc.game_modes, Game_mode),
+        (misc.bo_types, Bo_type),
+        (misc.teams, Team),
+        (misc.rules, Rule)
+    )
+    for table in tables:
+        print(f"[ INSERT ] Заполняю таблицу {table[1].__tablename__}")
+        for row in table[0]:
+            db.session.add(table[1](**row))
+            db.session.commit()
 
 
 if __name__ == "__main__":
